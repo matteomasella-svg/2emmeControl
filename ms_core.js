@@ -94,19 +94,40 @@
     const mp = getMultiproperty();
     if (!mp || !mp.properties_by_id || !Array.isArray(mp.properties)) return null;
     const included = mp.properties.filter(p => p.property_id && !EXCLUDED_AGGREGATE_IDS.has(p.property_id));
+    const includedMasters = included
+      .map(p => ((mp.properties_by_id[p.property_id] || {}).property_master || [])[0] || {})
+      .filter(Boolean);
+    const purchaseTotal = includedMasters.reduce((sum, p) => sum + (parseFloat(p.purchase_price_eur) || 0), 0);
+    const purchaseDates = includedMasters.map(p => p.purchase_date).filter(Boolean).sort();
     const aggregate = {
       property_master: [{
         property_id: ALL_2EMME_ID,
         name: "Tutti alloggi 2EMME",
         address: "Portfolio 2EMME escluso Masotto Terrace View",
         owner: "2EMME / gestione societaria",
+        manager: "2EMME Real Estate & Consulting",
+        purchase_date: purchaseDates[0] || "2024-01-01",
+        purchase_price_eur: purchaseTotal,
+        activity_start_date: "2024-01-01",
+        activity_start_note: "Aggregato gestionale degli alloggi 2EMME con attivita avviata dal 2024. Masotto Terrace View escluso.",
         tax_regime: "forfettario",
         tax_regime_label: "Aggregato alloggi societari - regime forfettario",
         vat_applicable: false,
         tax_rate_pct: 5,
         profitability_coefficient_pct: 40,
         effective_tax_rate_on_turnover_pct: 2,
-        tax_formula_human: "Aggregato gestionale: imposta stimata = fatturato imponibile x 40% x 5%. Masotto Terrace View escluso."
+        tax_formula_human: "Aggregato gestionale: imposta stimata = fatturato imponibile x 40% x 5%. Masotto Terrace View escluso.",
+        receipt_issuer_type: "company_forfettario",
+        receipt_issuer_name: "2EMME Real Estate & Consulting",
+        receipt_issuer_label: "Regime forfettario - niente IVA",
+        receipt_use_company_logo: true,
+        company_legal_name: "2EMME Real Estate & Consulting",
+        company_registered_office: "Via Pietro Colletta 70, 20137 Milano",
+        company_vat_number: "IT13411850962",
+        company_tax_code: "MSLMTT79E26B354D",
+        company_rea: "MI 2721793",
+        company_sdi: "JKKZDGR",
+        company_logo_text: "2M"
       }],
       assets_mobile: [],
       structural_assets: [],

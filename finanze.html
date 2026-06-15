@@ -94,6 +94,9 @@
                     <button onclick="generateProfessionalReport()" class="bg-[#1e293b] hover:bg-gray-700 border border-white/10 text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition">
                         <i data-lucide="file-text" class="w-4 h-4 text-amber-500"></i> Genera Report PDF
                     </button>
+                    <button onclick="openReceiptsModal()" class="bg-white text-black hover:bg-gray-200 font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition">
+                        <i data-lucide="receipt" class="w-4 h-4"></i> Ricevute
+                    </button>
                     <button onclick="openModal()" class="bg-teal-500 hover:bg-teal-400 text-teal-950 font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition">
                         <i data-lucide="plus-circle" class="w-5 h-5"></i> Movimento Manuale
                     </button>
@@ -222,6 +225,21 @@
         </div>
     </div>
 
+    <div id="receiptsModal" class="modal">
+        <div class="modal-box" style="max-width: 900px; max-height: 90vh;">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2"><i data-lucide="receipt"></i> Generatore Ricevute <span id="receipt-year-title" class="text-teal-400 font-mono"></span></h3>
+                <button onclick="closeReceiptsModal()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="overflow-y-auto" style="max-height: 70vh;">
+                <table class="w-full text-xs move-table">
+                    <thead class="sticky top-0 z-10 bg-[#0f151a] text-gray-400"><tr><th>Ospite</th><th>Check-in</th><th>Notti</th><th>Canale</th><th class="text-right">Lordo</th><th class="text-right">Azione</th></tr></thead>
+                    <tbody id="receipts-tbody" class="text-white"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <script>
         let financesDB = [];
         let bookingsDB = [];
@@ -304,6 +322,8 @@
             
             bookingsDB = bookingsDB.map(b => ({
                 id: b.id, guest: b.guest, check_in: b.check_in || b.checkin, nights: b.nights || 1,
+                check_out: b.check_out || b.out,
+                pax: b.pax || b.guests || 1,
                 gross_eur: parseFloat(b.gross_eur !== undefined ? b.gross_eur : (b.price || 0)),
                 commission_eur: parseFloat(b.commission_eur !== undefined ? b.commission_eur : (b.comm || 0)),
                 city_tax_eur: parseFloat(b.city_tax_eur !== undefined ? b.city_tax_eur : (b.tax || 0)),
@@ -564,6 +584,92 @@
 
             renderCharts(unifiedTransactions);
             if(window.lucide) lucide.createIcons();
+        }
+
+        function getReceiptIssuer() {
+            const issuerType = propertyInfo.receipt_issuer_type || (propertyInfo.property_id === 'MASOTTO4_39' ? 'private_lt' : 'company_forfettario');
+            const isCompany = issuerType === 'company_forfettario';
+            return {
+                type: issuerType,
+                name: isCompany ? (propertyInfo.company_legal_name || propertyInfo.receipt_issuer_name || '2EMME Real Estate & Consulting') : (propertyInfo.receipt_issuer_name || propertyInfo.owner || 'Locatore'),
+                label: isCompany ? 'Regime forfettario - niente IVA' : 'LT non imprenditoriale - cedolare secca',
+                logoText: isCompany ? (propertyInfo.company_logo_text || '2M') : (propertyInfo.name || 'LT'),
+                address: isCompany ? (propertyInfo.company_registered_office || 'Via Pietro Colletta 70, 20137 Milano') : (propertyInfo.address || ''),
+                fiscalCode: isCompany ? (propertyInfo.company_tax_code || 'MSLMTT79E26B354D') : (propertyInfo.owner_cf || propertyInfo.fiscal_code || ''),
+                vatNumber: isCompany ? (propertyInfo.company_vat_number || 'IT13411850962') : '',
+                rea: isCompany ? (propertyInfo.company_rea || 'MI 2721793') : '',
+                sdi: isCompany ? (propertyInfo.company_sdi || 'JKKZDGR') : '',
+                useLogo: isCompany
+            };
+        }
+
+        function normalizeReceiptBooking(rawBooking) {
+            const checkInRaw = rawBooking.check_in || rawBooking.checkin || '';
+            const nights = parseInt(rawBooking.nights || 1, 10) || 1;
+            const checkInDate = new Date(checkInRaw);
+            const checkOutDate = rawBooking.check_out || rawBooking.out ? new Date(rawBooking.check_out || rawBooking.out) : new Date(checkInDate);
+            if (!rawBooking.check_out && !rawBooking.out && !isNaN(checkOutDate.getTime())) checkOutDate.setDate(checkOutDate.getDate() + nights);
+            const source = rawBooking.portal || rawBooking.source || rawBooking.channel || 'Diretta';
+            const year = (checkInRaw || '').split('-')[0];
+            const taxRate = year === '2026' ? 9.50 : 6.30;
+            const pax = parseInt(rawBooking.pax || rawBooking.guests || 1, 10) || 1;
+            const taxedNights = Math.min(nights, 14);
+            const calculatedCityTax = taxedNights * pax * taxRate;
+            const isAirbnb = source.toLowerCase().includes('airbnb');
+            const totalPaid = parseFloat(rawBooking.gross_eur !== undefined ? rawBooking.gross_eur : rawBooking.price) || 0;
+            const storedCityTax = parseFloat(rawBooking.city_tax_eur !== undefined ? rawBooking.city_tax_eur : rawBooking.tax) || 0;
+            const cityTax = isAirbnb ? calculatedCityTax : (storedCityTax > 0 ? storedCityTax : calculatedCityTax);
+            return {
+                ...rawBooking,
+                checkInFmt: isNaN(checkInDate.getTime()) ? '-' : checkInDate.toLocaleDateString('it-IT'),
+                checkOutFmt: isNaN(checkOutDate.getTime()) ? '-' : checkOutDate.toLocaleDateString('it-IT'),
+                nights, pax, source, calculatedCityTax, cityTax, isAirbnb, totalPaid,
+                rentAmount: totalPaid - (isAirbnb ? 0 : cityTax)
+            };
+        }
+
+        function openReceiptsModal() {
+            const filter = document.getElementById('yearFilter').value;
+            document.getElementById('receipt-year-title').innerText = filter === 'ALL' ? 'Storico' : filter;
+            const tbody = document.getElementById('receipts-tbody');
+            const rows = bookingsDB
+                .filter(b => filter === 'ALL' || (b.check_in || '').startsWith(filter))
+                .sort((a,b) => new Date(b.check_in || 0) - new Date(a.check_in || 0));
+            tbody.innerHTML = rows.map(b => {
+                const gross = parseFloat(b.gross_eur) || 0;
+                const date = b.check_in ? b.check_in.split('-').reverse().join('/') : 'N/D';
+                return `<tr class="border-b border-white/5"><td class="py-3 font-bold">${b.guest || 'Ospite'}</td><td class="py-3 font-mono text-gray-400">${date}</td><td class="py-3">${b.nights || 1}</td><td class="py-3 text-gray-400">${b.source || 'Diretta'}</td><td class="py-3 text-right font-mono text-teal-400">€ ${gross.toFixed(2)}</td><td class="py-3 text-right"><button onclick="generateReceiptPDF('${b.id}')" class="bg-white text-black px-3 py-1 rounded font-extrabold text-[10px] uppercase">PDF</button></td></tr>`;
+            }).join('') || `<tr><td colspan="6" class="py-8 text-center text-gray-500">Nessuna prenotazione nel periodo selezionato.</td></tr>`;
+            document.getElementById('receiptsModal').style.display = 'flex';
+            if(window.lucide) lucide.createIcons();
+        }
+
+        function closeReceiptsModal() { document.getElementById('receiptsModal').style.display = 'none'; }
+
+        function generateReceiptPDF(bookingId) {
+            const rawBooking = bookingsDB.find(x => String(x.id) === String(bookingId));
+            if (!rawBooking) return;
+            const b = normalizeReceiptBooking(rawBooking);
+            const issuer = getReceiptIssuer();
+            const propName = propertyInfo.name || 'Alloggio selezionato';
+            const propAddress = propertyInfo.address || '';
+            const propCIR = propertyInfo.cir || '';
+            const propCIN = propertyInfo.cin || propertyInfo.CIN || '';
+            const todayFmt = new Date().toLocaleDateString('it-IT');
+            let legalNotes = issuer.type === 'company_forfettario'
+                ? `Operazione in regime forfettario: niente IVA. Intestatario: ${issuer.name}, ${issuer.address}, P.IVA ${issuer.vatNumber}, C.F. ${issuer.fiscalCode}, REA ${issuer.rea}, SDI ${issuer.sdi}. Coefficiente redditivita 40% e imposta sostitutiva 5% sul 40% del fatturato imponibile.`
+                : `Locazione turistica non imprenditoriale soggetta a cedolare secca secondo profilo fiscale dell'alloggio. Operazione fuori campo IVA se coerente con gestione privata.`;
+            if (b.isAirbnb) legalNotes += `<br><br><strong>NOTA Airbnb:</strong> l'imposta di soggiorno di € ${b.calculatedCityTax.toLocaleString('it-IT',{minimumFractionDigits:2})} e' stata percetta e riversata dal portale.`;
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Ricevuta_${String(b.guest || 'Ospite').replace(/\\s+/g, '_')}_${b.id}</title><style>
+                body{font-family:Arial,Helvetica,sans-serif;color:#111827;padding:42px;margin:0 auto;max-width:860px;line-height:1.45}.top{display:flex;justify-content:space-between;border-bottom:4px solid #1f2937;padding-bottom:28px;margin-bottom:36px}.title{font-size:44px;font-weight:900;font-style:italic;text-transform:uppercase}.kicker{font-size:10px;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:1.4px}.brand{text-align:right;font-weight:800;color:#0f766e;font-size:20px}.brand small{display:block;color:#6b7280;font-size:11px;margin-top:3px}.brand-row{display:flex;justify-content:flex-end;align-items:center;gap:12px}.logo-mark{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#004D54,#10b981);color:white;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900}.grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-bottom:38px}.label{font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:900;letter-spacing:1.2px;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin-bottom:10px}.name{font-size:19px;font-weight:900;text-transform:uppercase}p{margin:4px 0;font-size:13px;color:#4b5563}.stay{background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:22px;margin-bottom:34px}.stay-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}.stay-value{font-size:18px;font-weight:900}table{width:100%;border-collapse:collapse;margin-bottom:34px}th{border-bottom:2px solid #d1d5db;padding:12px 0;text-align:left;font-size:11px;text-transform:uppercase;color:#6b7280}td{border-bottom:1px solid #f1f5f9;padding:18px 0;font-size:14px;font-weight:700}.right{text-align:right;font-family:monospace}.total td{border-bottom:none;padding-top:24px;font-size:24px;font-weight:900;text-transform:uppercase}.total .right{color:#0f766e;font-size:30px}.notes{border-top:1px solid #e5e7eb;padding-top:18px;font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.6px;line-height:1.8;font-weight:700}.signature{margin-top:48px;display:flex;justify-content:flex-end}.signature-box{width:260px;text-align:center;border-top:1px dotted #111827;padding-top:8px;font-size:12px;color:#374151}@media print{body{padding:0}@page{margin:1.8cm}}</style></head><body>
+                <div class="top"><div><div class="title">Ricevuta</div><div class="kicker">${issuer.label}</div><p><strong>N. Rif:</strong> ${b.id} &nbsp; | &nbsp; <strong>Data emissione:</strong> ${todayFmt}</p></div><div class="brand"><div class="brand-row">${issuer.useLogo ? `<div class="logo-mark">${issuer.logoText}</div>` : ''}<div>${issuer.name}<small>${propName}</small><small>CIR: ${propCIR}</small><small>CIN: ${propCIN}</small></div></div></div></div>
+                <div class="grid"><div><div class="label">Intestatario</div><div class="name">${issuer.name}</div><p><strong>C.F:</strong> ${issuer.fiscalCode}</p>${issuer.vatNumber ? `<p><strong>P.IVA:</strong> ${issuer.vatNumber}</p>` : ''}<p>${issuer.address || propAddress}</p><p><strong>Alloggio:</strong> ${propAddress}</p></div><div><div class="label">Soggetto Ospite</div><div class="name">${b.guest || 'Ospite'}</div><p><strong>Canale:</strong> ${b.source}</p><p><strong>Ospiti:</strong> ${b.pax}</p></div></div>
+                <div class="stay"><div class="label">Dettagli Permanenza</div><div class="stay-grid"><div><p>Check-in</p><div class="stay-value">${b.checkInFmt}</div></div><div><p>Check-out</p><div class="stay-value">${b.checkOutFmt}</div></div><div><p>Notti</p><div class="stay-value">${b.nights}</div></div></div></div>
+                <table><thead><tr><th>Descrizione servizio</th><th class="right">Importo</th></tr></thead><tbody><tr><td>Canone di locazione breve</td><td class="right">€ ${b.rentAmount.toLocaleString('it-IT',{minimumFractionDigits:2})}</td></tr><tr><td>Imposta di soggiorno Comune di Milano</td><td class="right">€ ${(b.isAirbnb ? 0 : b.cityTax).toLocaleString('it-IT',{minimumFractionDigits:2})}</td></tr><tr class="total"><td>Totale riscosso</td><td class="right">€ ${b.totalPaid.toLocaleString('it-IT',{minimumFractionDigits:2})}</td></tr></tbody></table>
+                <div class="notes">${legalNotes}</div><div class="signature"><div class="signature-box">Firma<br><strong>${issuer.name}</strong></div></div><script>window.onload=function(){setTimeout(function(){window.print()},300)};<\/script></body></html>`);
+            printWindow.document.close();
         }
 
         // =======================================================================
@@ -832,7 +938,7 @@
     ["audit.html","Audit","clipboard-check"],
     ["manutenzione.html","Manutenzione","wrench"],
     ["prenotazioni.html","Prenotazioni","calendar"],
-    ["FINANZE.html","Finanze","pie-chart"],
+    ["finanze.html","Finanze","pie-chart"],
     ["sicurezza.html","Sicurezza","shield"]
   ];
 

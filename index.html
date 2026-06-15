@@ -7,6 +7,7 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <script src="masotto_db.js"></script>
@@ -48,8 +49,9 @@
                     <div id="dashboard-property-subtitle" class="text-sm text-gray-400">Dati Aggiornati in Tempo Reale</div>
                 </div>
                 <div class="flex items-center gap-3">
+                    <div id="dashboard-issuer-logo" class="hidden sm:flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2"></div>
                     <select id="dashYearFilter" onchange="loadDashboard()" class="bg-[#1e293b] border border-white/10 text-white px-4 py-2 rounded-lg font-bold text-sm outline-none cursor-pointer shadow-lg">
-                        <option value="2025" selected>Esercizio 2025 (Da 25/08)</option>
+                        <option value="2025" selected>Esercizio 2025</option>
                         <option value="2026">Esercizio 2026</option>
                     </select>
                 </div>
@@ -59,7 +61,7 @@
                 <div class="bg-[#0f151a] border border-white/10 rounded-xl p-4 shadow-lg border-l-4 border-l-blue-500">
                     <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1"><i data-lucide="building-2" class="w-3 h-3 inline"></i> Saldo Reale Conto</div>
                     <div class="text-2xl font-bold text-blue-400 font-mono" id="kpi-bank">€ 0</div>
-                    <div class="text-[10px] text-gray-500 mt-1">Include fondo inziale. Esclude tasse pagate a parte.</div>
+                    <div class="text-[10px] text-gray-500 mt-1">Saldo dell'anno selezionato. Esclude tasse pagate a parte.</div>
                 </div>
                 <div class="bg-[#0f151a] border border-white/10 rounded-xl p-4 shadow-lg border-l-4 border-l-emerald-500">
                     <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1"><i data-lucide="trending-up" class="w-3 h-3 inline"></i> Lordo Anno (<span id="kpi-year-label"></span>)</div>
@@ -102,12 +104,26 @@
                 </div>
             </div>
 
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="lg:col-span-2 bg-[#0f151a] border border-white/10 rounded-xl p-5 shadow-xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2"><i data-lucide="line-chart" class="w-4 h-4 text-emerald-400"></i> Ricavi e Proiezione Anno</h3>
+                        <div class="text-[10px] text-gray-500" id="dash-projection-note">Stima su media mesi attivi</div>
+                    </div>
+                    <div class="h-72"><canvas id="dashRevenueChart"></canvas></div>
+                </div>
+                <div class="bg-[#0f151a] border border-white/10 rounded-xl p-5 shadow-xl">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 mb-4"><i data-lucide="pie-chart" class="w-4 h-4 text-teal-400"></i> Mix Canali</h3>
+                    <div class="h-72"><canvas id="dashChannelChart"></canvas></div>
+                </div>
+            </div>
+
             <div class="bg-[#0f151a] border border-white/10 rounded-xl p-6 shadow-xl mb-8 border-t-4 border-t-purple-500">
                 <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-5 flex items-center gap-2"><i data-lucide="trending-up" class="w-5 h-5 text-purple-400"></i> Capital Gain & Valutazione Asset</h3>
                 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div>
-                        <div class="text-[11px] font-bold text-gray-500 mb-1 uppercase">Prezzo d'Acquisto</div>
+                        <div class="text-[11px] font-bold text-gray-500 mb-1 uppercase" id="re-base-label">Prezzo d'Acquisto</div>
                         <div class="text-2xl font-bold text-white font-mono" id="re-base">€ 0</div>
                         <div class="text-[10px] text-gray-400 mt-1" id="re-date">Aprile 2023</div>
                     </div>
@@ -117,14 +133,31 @@
                         <div class="text-[10px] text-gray-400 mt-1">Amianto, Terrazze, Asset</div>
                     </div>
                     <div class="md:border-l border-white/10 md:pl-6">
-                        <div class="text-[11px] font-bold text-purple-400 mb-1 uppercase">Valore Mercato Stimato</div>
+                        <div class="text-[11px] font-bold text-purple-400 mb-1 uppercase">Valore Indicativo Interno</div>
                         <div class="text-3xl font-bold text-purple-400 font-mono" id="re-market">€ 0</div>
-                        <div class="text-[10px] text-gray-400 mt-1">Crescita annua calcolata a <span class="text-purple-400 font-bold">+4.5%</span></div>
+                        <div class="text-[10px] text-gray-400 mt-1" id="re-market-note">Rivalutazione interna, non perizia</div>
                     </div>
                     <div>
-                        <div class="text-[11px] font-bold text-emerald-400 mb-1 uppercase">Plusvalenza Netta Reale</div>
+                        <div class="text-[11px] font-bold text-emerald-400 mb-1 uppercase">Plusvalenza Potenziale</div>
                         <div class="text-3xl font-bold font-mono" id="re-gain">+ € 0</div>
-                        <div class="text-[10px] text-gray-400 mt-1">Valore finale meno costi sostenuti</div>
+                        <div class="text-[10px] text-gray-400 mt-1">Valore indicativo meno costi sostenuti</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-5 border-t border-white/10">
+                    <div class="bg-black/20 border border-white/5 rounded-lg p-4">
+                        <div class="text-[10px] font-bold text-gray-500 uppercase">Scenario prudente</div>
+                        <div class="text-xl font-bold text-white font-mono" id="re-scenario-low">€ 0</div>
+                        <div class="text-[10px] text-gray-500" id="re-scenario-low-note">Base rivalutata +2,0% annuo</div>
+                    </div>
+                    <div class="bg-black/20 border border-purple-500/20 rounded-lg p-4">
+                        <div class="text-[10px] font-bold text-purple-400 uppercase">Scenario mercato</div>
+                        <div class="text-xl font-bold text-purple-300 font-mono" id="re-scenario-mid">€ 0</div>
+                        <div class="text-[10px] text-gray-500" id="re-scenario-mid-note">Base rivalutata +4,5% annuo</div>
+                    </div>
+                    <div class="bg-black/20 border border-emerald-500/20 rounded-lg p-4">
+                        <div class="text-[10px] font-bold text-emerald-400 uppercase">Scenario espansivo</div>
+                        <div class="text-xl font-bold text-emerald-300 font-mono" id="re-scenario-high">€ 0</div>
+                        <div class="text-[10px] text-gray-500" id="re-scenario-high-note">Base rivalutata +6,5% annuo</div>
                     </div>
                 </div>
             </div>
@@ -173,6 +206,8 @@
         let ticketsDB = [];
         let financesDB = [];
         let propertyInfo = {};
+        let dashRevenueChart = null;
+        let dashChannelChart = null;
         const FUND_2025_INITIAL = 1300.00;
 
         function loadDashboard() {
@@ -180,6 +215,7 @@
             propertyInfo = masterDB.property_master[0] || {};
             const subtitle = document.getElementById('dashboard-property-subtitle');
             if (subtitle) subtitle.innerText = `${propertyInfo.name || 'Portfolio'} - Dati Aggiornati in Tempo Reale`;
+            renderDashboardIssuer();
 
             let locBook = localStorage.getItem('masotto_booking_db');
             if(!locBook || locBook === "undefined" || locBook === "[]") { bookingsDB = JSON.parse(JSON.stringify(masterDB.bookings || [])); } 
@@ -201,6 +237,7 @@
 
             applyAutoPaidForDuePayments();
             calculateKPIs();
+            renderDashboardCharts();
             renderReceipts();
             analyzeUtilities();
             calculateRealEstateValue();
@@ -226,6 +263,64 @@
             }
         }
 
+        function getReceiptIssuer() {
+            const issuerType = propertyInfo.receipt_issuer_type || (propertyInfo.property_id === 'MASOTTO4_39' ? 'private_lt' : 'company_forfettario');
+            const isCompany = issuerType === 'company_forfettario';
+            return {
+                type: issuerType,
+                name: isCompany ? (propertyInfo.company_legal_name || propertyInfo.receipt_issuer_name || '2EMME Real Estate & Consulting') : (propertyInfo.receipt_issuer_name || propertyInfo.owner || 'Locatore'),
+                label: isCompany ? 'Regime forfettario - niente IVA' : 'LT non imprenditoriale - cedolare secca',
+                logoText: isCompany ? (propertyInfo.company_logo_text || '2M') : (propertyInfo.name || 'LT'),
+                address: isCompany ? (propertyInfo.company_registered_office || 'Via Pietro Colletta 70, 20137 Milano') : (propertyInfo.address || ''),
+                fiscalCode: isCompany ? (propertyInfo.company_tax_code || 'MSLMTT79E26B354D') : (propertyInfo.owner_cf || propertyInfo.fiscal_code || ''),
+                vatNumber: isCompany ? (propertyInfo.company_vat_number || 'IT13411850962') : '',
+                rea: isCompany ? (propertyInfo.company_rea || 'MI 2721793') : '',
+                sdi: isCompany ? (propertyInfo.company_sdi || 'JKKZDGR') : '',
+                useLogo: isCompany
+            };
+        }
+
+        function renderDashboardIssuer() {
+            const box = document.getElementById('dashboard-issuer-logo');
+            if (!box) return;
+            const issuer = getReceiptIssuer();
+            box.classList.remove('hidden');
+            box.innerHTML = `
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-extrabold text-xs" style="background:linear-gradient(135deg,#004D54,#10b981)">${issuer.logoText}</div>
+                <div class="leading-tight">
+                    <div class="text-xs font-bold text-white">${issuer.name}</div>
+                    <div class="text-[10px] text-gray-400">${issuer.label}</div>
+                </div>
+            `;
+        }
+
+        function getActivityStartDate() {
+            return propertyInfo.activity_start_date || (propertyInfo.property_id === 'MASOTTO4_39' ? '2025-08-25' : '2024-01-01');
+        }
+
+        function daysAvailableInYear(year) {
+            const start = new Date(`${getActivityStartDate()}T00:00:00`);
+            const yearStart = new Date(`${year}-01-01T00:00:00`);
+            const yearEnd = new Date(`${year}-12-31T00:00:00`);
+            if (isNaN(start.getTime())) return 365;
+            const effectiveStart = start > yearStart ? start : yearStart;
+            if (effectiveStart > yearEnd) return 0;
+            return Math.floor((yearEnd - effectiveStart) / (1000 * 60 * 60 * 24)) + 1;
+        }
+
+        function getMonthlyRevenue(year) {
+            const months = Array(12).fill(0);
+            bookingsDB.forEach(b => {
+                const d = b.check_in || b.checkin || '';
+                if (!d.startsWith(year)) return;
+                const monthIndex = parseInt(d.substring(5,7), 10) - 1;
+                if (monthIndex >= 0 && monthIndex < 12) {
+                    months[monthIndex] += parseFloat(b.gross_eur !== undefined ? b.gross_eur : b.price) || 0;
+                }
+            });
+            return months;
+        }
+
         function calculateKPIs() {
             let year = document.getElementById('dashYearFilter').value;
             document.getElementById('kpi-year-label').innerText = year;
@@ -247,49 +342,37 @@
             if(openTickets > 0) document.getElementById('kpi-tickets').className = "text-2xl font-bold text-amber-400";
             else document.getElementById('kpi-tickets').className = "text-2xl font-bold text-white";
 
-            // Saldo Reale e Ricavi
-            let closingBalance2025 = 0;
-            let b25 = bookingsDB.filter(b => (b.check_in || b.checkin).startsWith('2025'));
-            let f25 = financesDB.filter(f => f.date && f.date.startsWith('2025') && f.status === 'paid');
-            let totIn25 = 0; b25.forEach(b => totIn25 += (parseFloat(b.gross_eur !== undefined ? b.gross_eur : b.price)||0));
-            let totOut25 = 0;
-            f25.forEach(f => {
-                if(f.type === 'income') totIn25 += f.amount_eur;
-                else if(!(f.category === 'Tasse' && (f.description.toUpperCase().includes('IMU') || f.description.toUpperCase().includes('TARI')))) totOut25 += f.amount_eur;
-            });
-            closingBalance2025 = FUND_2025_INITIAL + totIn25 - totOut25;
-
+            // Saldo Reale e Ricavi: ogni anno resta autonomo, senza sommare il saldo 2025 al 2026.
             let finalBalance = 0;
             let yearRev = 0;
             let yearNights = 0;
+            let yearBankIn = 0;
+            let yearBankOut = 0;
 
             bookingsDB.forEach(b => {
                 let d = b.check_in || b.checkin || "";
                 if(d.startsWith(year)) {
                     yearNights += b.nights || 0;
-                    yearRev += parseFloat(b.gross_eur !== undefined ? b.gross_eur : b.price) || 0;
+                    const gross = parseFloat(b.gross_eur !== undefined ? b.gross_eur : b.price) || 0;
+                    yearRev += gross;
+                    yearBankIn += gross;
                 }
             });
 
-            if(year === '2025') {
-                finalBalance = closingBalance2025;
-            } else {
-                let b26 = bookingsDB.filter(b => (b.check_in || b.checkin).startsWith('2026'));
-                let f26 = financesDB.filter(f => f.date && f.date.startsWith('2026') && f.status === 'paid');
-                let totIn26 = 0; b26.forEach(b => totIn26 += (parseFloat(b.gross_eur !== undefined ? b.gross_eur : b.price)||0));
-                let totOut26 = 0;
-                f26.forEach(f => {
-                    if(f.type === 'income') totIn26 += f.amount_eur;
-                    else if(!(f.category === 'Tasse' && (f.description.toUpperCase().includes('IMU') || f.description.toUpperCase().includes('TARI')))) totOut26 += f.amount_eur;
+            financesDB
+                .filter(f => f.date && f.date.startsWith(year) && f.status === 'paid')
+                .forEach(f => {
+                    const desc = (f.description || '').toUpperCase();
+                    if(f.type === 'income') yearBankIn += parseFloat(f.amount_eur) || 0;
+                    else if(!(f.category === 'Tasse' && (desc.includes('IMU') || desc.includes('TARI')))) yearBankOut += parseFloat(f.amount_eur) || 0;
                 });
-                finalBalance = closingBalance2025 + totIn26 - totOut26;
-            }
+            finalBalance = (year === '2025' ? FUND_2025_INITIAL : 0) + yearBankIn - yearBankOut;
 
             document.getElementById('kpi-bank').innerText = `€ ${finalBalance.toLocaleString('it-IT',{minimumFractionDigits:2})}`;
             document.getElementById('kpi-revenue').innerText = `€ ${yearRev.toLocaleString('it-IT', {minimumFractionDigits:0})}`;
 
-            let daysInPeriod = year === '2025' ? 129 : 365;
-            document.getElementById('lbl-occ-days').innerText = year === '2025' ? "(su 129 gg)" : "(su 365 gg)";
+            let daysInPeriod = daysAvailableInYear(year);
+            document.getElementById('lbl-occ-days').innerText = `(su ${daysInPeriod} gg)`;
             
             let occ = daysInPeriod > 0 ? (yearNights / daysInPeriod) * 100 : 0;
             let adr = yearNights > 0 ? (yearRev / yearNights) : 0;
@@ -301,10 +384,18 @@
         }
 
         function calculateRealEstateValue() {
-            let basePrice = parseFloat(propertyInfo.purchase_price_eur || 0);
+            let basePrice = parseFloat(propertyInfo.valuation_basis_eur || propertyInfo.accounting_initial_value_eur || propertyInfo.purchase_price_eur || 0);
             let purchaseDateStr = propertyInfo.purchase_date || "";
             let purchaseDate = new Date(purchaseDateStr);
             let today = new Date();
+            const basisLabel = propertyInfo.valuation_basis_label || "Prezzo d'Acquisto";
+            const isNotarial = propertyInfo.valuation_basis_is_notarial_price !== false;
+            const baseLabelEl = document.getElementById('re-base-label');
+            if (baseLabelEl) baseLabelEl.innerText = basisLabel;
+            ['re-scenario-low-note','re-scenario-mid-note','re-scenario-high-note'].forEach((id, idx) => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = `${isNotarial ? 'Costo base' : 'Valore gestionale'} rivalutato +${idx === 0 ? '2,0' : idx === 1 ? '4,5' : '6,5'}% annuo`;
+            });
             
             let yearsElapsed = (today - purchaseDate) / (1000 * 60 * 60 * 24 * 365.25);
             if(yearsElapsed < 0) yearsElapsed = 0;
@@ -318,25 +409,36 @@
 
             if (!basePrice || isNaN(purchaseDate.getTime())) {
                 document.getElementById('re-base').innerText = 'N/D';
-                document.getElementById('re-date').innerText = 'Acquisto: N/D';
+                document.getElementById('re-date').innerText = 'Data base: N/D';
                 document.getElementById('re-capex').innerText = `+ € ${capex.toLocaleString('it-IT',{minimumFractionDigits:0})}`;
                 document.getElementById('re-market').innerText = 'N/D';
                 document.getElementById('re-gain').innerText = 'N/D';
-                document.getElementById('re-roi').innerText = 'ROI: N/D';
+                ['re-scenario-low','re-scenario-mid','re-scenario-high'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerText = 'N/D';
+                });
                 return;
             }
 
-            let annualRate = 0.045;
-            let marketValueBase = basePrice * Math.pow((1 + annualRate), yearsElapsed);
-            let totalMarketValue = marketValueBase + (capex * 0.7); 
+            const scenarioRates = { low: 0.02, mid: 0.045, high: 0.065 };
+            const marketFloor = parseFloat(propertyInfo.market_floor_eur || 0);
+            const rawScenarioValue = rate => (basePrice * Math.pow((1 + rate), yearsElapsed)) + (capex * 0.7);
+            const scenarioValue = rate => Math.max(rawScenarioValue(rate), marketFloor || 0);
+            let totalMarketValue = scenarioValue(scenarioRates.mid); 
             
             let capitalGain = totalMarketValue - basePrice - capex;
             let roi = ((totalMarketValue / (basePrice + capex)) - 1) * 100;
 
             document.getElementById('re-base').innerText = `€ ${basePrice.toLocaleString('it-IT',{minimumFractionDigits:0})}`;
-            document.getElementById('re-date').innerText = `Acquisto: ${purchaseDate.toLocaleDateString('it-IT')}`;
+            document.getElementById('re-date').innerText = `${isNotarial ? 'Rogito' : 'Base interna'}: ${purchaseDate.toLocaleDateString('it-IT')}`;
             document.getElementById('re-capex').innerText = `+ € ${capex.toLocaleString('it-IT',{minimumFractionDigits:0})}`;
             document.getElementById('re-market').innerText = `€ ${totalMarketValue.toLocaleString('it-IT',{minimumFractionDigits:0})}`;
+            const marketNote = document.getElementById('re-market-note');
+            if (marketNote) {
+                marketNote.innerText = marketFloor && totalMarketValue === marketFloor
+                    ? `Soglia minima gestionale applicata: € ${marketFloor.toLocaleString('it-IT',{minimumFractionDigits:0})}`
+                    : 'Rivalutazione interna, da validare con comparabili reali';
+            }
             
             let gainEl = document.getElementById('re-gain');
             if(capitalGain >= 0) {
@@ -344,6 +446,49 @@
             } else {
                 gainEl.innerHTML = `<span class="text-red-400">- € ${Math.abs(capitalGain).toLocaleString('it-IT',{minimumFractionDigits:0})} <span class="text-sm">(${roi.toFixed(1)}%)</span></span>`;
             }
+            document.getElementById('re-scenario-low').innerText = `€ ${scenarioValue(scenarioRates.low).toLocaleString('it-IT',{minimumFractionDigits:0})}`;
+            document.getElementById('re-scenario-mid').innerText = `€ ${scenarioValue(scenarioRates.mid).toLocaleString('it-IT',{minimumFractionDigits:0})}`;
+            document.getElementById('re-scenario-high').innerText = `€ ${scenarioValue(scenarioRates.high).toLocaleString('it-IT',{minimumFractionDigits:0})}`;
+        }
+
+        function renderDashboardCharts() {
+            if (!window.Chart) return;
+            const year = document.getElementById('dashYearFilter').value;
+            const labels = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+            const monthly = getMonthlyRevenue(year);
+            const activeMonths = monthly.filter(v => v > 0);
+            const avgActive = activeMonths.length ? activeMonths.reduce((a,b)=>a+b,0) / activeMonths.length : 0;
+            const currentYear = String(new Date().getFullYear());
+            const projected = monthly.map((v, idx) => v > 0 ? v : ((year > currentYear || (year === currentYear && idx >= new Date().getMonth())) ? avgActive : 0));
+            const note = document.getElementById('dash-projection-note');
+            if (note) note.innerText = `Media mesi attivi: € ${avgActive.toLocaleString('it-IT',{maximumFractionDigits:0})}`;
+
+            if (dashRevenueChart) dashRevenueChart.destroy();
+            dashRevenueChart = new Chart(document.getElementById('dashRevenueChart'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Ricavi reali', data: monthly, backgroundColor: '#10b981', borderRadius: 6 },
+                        { label: 'Proiezione', data: projected, type: 'line', borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,.14)', tension: .35, borderWidth: 2, pointRadius: 3 }
+                    ]
+                },
+                options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#94a3b8'}}}, scales:{x:{ticks:{color:'#94a3b8'}, grid:{color:'rgba(255,255,255,.04)'}}, y:{ticks:{color:'#94a3b8'}, grid:{color:'rgba(255,255,255,.04)'}}} }
+            });
+
+            const channelData = {};
+            bookingsDB.forEach(b => {
+                const d = b.check_in || b.checkin || '';
+                if (!d.startsWith(year)) return;
+                const channel = b.source || b.portal || 'Diretta';
+                channelData[channel] = (channelData[channel] || 0) + (parseFloat(b.gross_eur !== undefined ? b.gross_eur : b.price) || 0);
+            });
+            if (dashChannelChart) dashChannelChart.destroy();
+            dashChannelChart = new Chart(document.getElementById('dashChannelChart'), {
+                type: 'doughnut',
+                data: { labels: Object.keys(channelData), datasets: [{ data: Object.values(channelData), backgroundColor: ['#14b8a6','#3b82f6','#a855f7','#f59e0b','#ef4444'], borderWidth:0 }] },
+                options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom', labels:{color:'#94a3b8', font:{size:10}}}} }
+            });
         }
 
         function analyzeUtilities() {
@@ -385,9 +530,7 @@
                 
                 let gross = parseFloat(b.gross_eur !== undefined ? b.gross_eur : b.price) || 0;
 
-                let actionBtn = isDirect 
-                    ? `<button onclick="generateReceiptPDF('${b.id}')" class="bg-white text-black px-2 py-1 rounded font-bold text-[10px] uppercase tracking-wider hover:bg-gray-200 transition flex items-center gap-1 ml-auto"><i data-lucide="printer" class="w-3 h-3"></i> PDF</button>`
-                    : `<span class="text-[9px] text-gray-500 italic flex justify-end items-center uppercase tracking-wider">Fattura ${b.source}</span>`;
+                let actionBtn = `<button onclick="generateReceiptPDF('${b.id}')" class="bg-white text-black px-2 py-1 rounded font-bold text-[10px] uppercase tracking-wider hover:bg-gray-200 transition flex items-center gap-1 ml-auto"><i data-lucide="printer" class="w-3 h-3"></i> PDF</button>`;
 
                 tbody.innerHTML += `
                     <tr>
@@ -395,7 +538,7 @@
                         <td class="font-mono text-xs text-gray-400">${dateFmt}</td>
                         <td class="text-xs text-gray-400">${b.nights || 1}</td>
                         <td class="font-mono text-teal-400 font-bold text-xs">€ ${gross.toFixed(2)}</td>
-                        <td>${actionBtn}</td>
+                        <td><div class="flex items-center justify-end gap-2"><span class="text-[9px] text-gray-500 uppercase">${isDirect ? 'Diretta' : (b.source || b.portal || 'OTA')}</span>${actionBtn}</div></td>
                     </tr>
                 `;
             });
@@ -455,15 +598,21 @@
 
             const b = normalizeReceiptBooking(rawBooking);
             const todayFmt = new Date().toLocaleDateString('it-IT');
+            const issuer = getReceiptIssuer();
 
             const propName = propertyInfo.name || 'Alloggio selezionato';
             const propAddress = propertyInfo.address || '';
-            const propOwner = propertyInfo.owner || '';
+            const propOwner = issuer.name;
             const propCIR = propertyInfo.cir || '';
             const propCIN = propertyInfo.cin || propertyInfo.CIN || '';
-            const ownerFiscalCode = propertyInfo.owner_cf || propertyInfo.fiscal_code || '';
+            const ownerFiscalCode = issuer.fiscalCode || '';
 
             let legalNotes = propertyInfo.invoice_note || `Operazione senza addebito IVA secondo profilo fiscale dell'alloggio. Imposta di bollo € 2,00 assolta sull'originale per importi superiori a € 77,47.`;
+            if (issuer.type === 'company_forfettario') {
+                legalNotes = `Operazione in regime forfettario: niente IVA. Intestatario: ${issuer.name}, ${issuer.address}, P.IVA ${issuer.vatNumber}, C.F. ${issuer.fiscalCode}, REA ${issuer.rea}, SDI ${issuer.sdi}. Coefficiente redditivita 40% e imposta sostitutiva 5% sul 40% del fatturato imponibile.`;
+            } else if (issuer.type === 'private_lt') {
+                legalNotes = `Locazione turistica non imprenditoriale soggetta a cedolare secca secondo profilo fiscale dell'alloggio. Operazione fuori campo IVA se coerente con gestione privata.`;
+            }
             if (propertyInfo.tax_formula_human) {
                 legalNotes += `<br><br><strong>Profilo fiscale gestionale:</strong> ${propertyInfo.tax_formula_human}`;
             }
@@ -487,6 +636,8 @@
                         .kicker { font-size: 10px; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: 1.4px; }
                         .brand { text-align: right; font-weight: 800; color: #0f766e; font-size: 20px; }
                         .brand small { display:block; color:#6b7280; font-size:11px; margin-top:3px; }
+                        .brand-row { display:flex; justify-content:flex-end; align-items:center; gap:12px; }
+                        .logo-mark { width:46px; height:46px; border-radius:12px; background:linear-gradient(135deg,#004D54,#10b981); color:white; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:900; }
                         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-bottom: 38px; }
                         .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; font-weight: 900; letter-spacing: 1.2px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; margin-bottom: 10px; }
                         .name { font-size: 19px; font-weight: 900; text-transform: uppercase; color: #1f2937; }
@@ -510,22 +661,30 @@
                     <div class="top">
                         <div>
                             <div class="title">Ricevuta</div>
-                            <div class="kicker">Locazione Turistica - Art. 4 DL 50/2017</div>
+                            <div class="kicker">${issuer.label}</div>
                             <p><strong>N. Rif:</strong> ${b.id} &nbsp; | &nbsp; <strong>Data emissione:</strong> ${todayFmt}</p>
                         </div>
                         <div class="brand">
-                            ${propName}
-                            <small>CIR: ${propCIR}</small>
-                            <small>CIN: ${propCIN}</small>
+                            <div class="brand-row">
+                                ${issuer.useLogo ? `<div class="logo-mark">${issuer.logoText}</div>` : ''}
+                                <div>
+                                    ${issuer.name}
+                                    <small>${propName}</small>
+                                    <small>CIR: ${propCIR}</small>
+                                    <small>CIN: ${propCIN}</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <div class="grid">
                         <div>
-                            <div class="label">Locatore</div>
+                            <div class="label">Intestatario</div>
                             <div class="name">${propOwner}</div>
                             <p><strong>C.F:</strong> ${ownerFiscalCode}</p>
-                            <p>${propAddress}</p>
+                            ${issuer.vatNumber ? `<p><strong>P.IVA:</strong> ${issuer.vatNumber}</p>` : ''}
+                            <p>${issuer.address || propAddress}</p>
+                            <p><strong>Alloggio:</strong> ${propAddress}</p>
                         </div>
                         <div>
                             <div class="label">Soggetto Ospite</div>
@@ -565,7 +724,7 @@
                     </table>
 
                     <div class="notes">${legalNotes}</div>
-                    <div class="signature"><div class="signature-box">Firma del Locatore<br><strong>${propOwner}</strong></div></div>
+                    <div class="signature"><div class="signature-box">Firma<br><strong>${propOwner}</strong></div></div>
 
                     <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 300); };<\/script>
                 </body>
@@ -586,7 +745,7 @@
     ["audit.html","Audit","clipboard-check"],
     ["manutenzione.html","Manutenzione","wrench"],
     ["prenotazioni.html","Prenotazioni","calendar"],
-    ["FINANZE.html","Finanze","pie-chart"],
+    ["finanze.html","Finanze","pie-chart"],
     ["sicurezza.html","Sicurezza","shield"]
   ];
 

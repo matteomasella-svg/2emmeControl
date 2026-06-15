@@ -168,9 +168,18 @@
             return 'box';
         }
 
+        function assetStorageKey(kind) {
+            const mp = window.MASOTTO_MULTIPROPERTY_DB || {};
+            const propertyId = localStorage.getItem('2m_active_property_id') || mp.default_property_id || 'MASOTTO4_39';
+            const source = mp.source || (window.MASOTTO_DB && window.MASOTTO_DB.source_database_version) || 'database';
+            return `masotto_${kind}_db:${propertyId}:${source}`;
+        }
+
         function loadDB() {
-            let locMob = localStorage.getItem('masotto_assets_mobile_db');
-            let locStr = localStorage.getItem('masotto_structural_assets_db');
+            const mobileKey = assetStorageKey('assets_mobile');
+            const structuralKey = assetStorageKey('structural_assets');
+            let locMob = localStorage.getItem(mobileKey);
+            let locStr = localStorage.getItem(structuralKey);
             
             if(!locMob || locMob === "undefined" || locMob === "[]") dbMobile = window.MASOTTO_DB.assets_mobile || [];
             else dbMobile = JSON.parse(locMob);
@@ -306,7 +315,7 @@
                 } else {
                     dbMobile.push(newAsset);
                 }
-                localStorage.setItem('masotto_assets_mobile_db', JSON.stringify(dbMobile));
+                localStorage.setItem(assetStorageKey('assets_mobile'), JSON.stringify(dbMobile));
 
             } else {
                 const newAsset = {
@@ -324,7 +333,7 @@
                 } else {
                     dbStruct.push(newAsset);
                 }
-                localStorage.setItem('masotto_structural_assets_db', JSON.stringify(dbStruct));
+                localStorage.setItem(assetStorageKey('structural_assets'), JSON.stringify(dbStruct));
             }
             if(window.msCommitCurrentChanges) window.msCommitCurrentChanges();
             
@@ -339,10 +348,10 @@
             if(confirm("Sei sicuro di voler eliminare questo asset dal sistema?")) {
                 if(type === 'mobile') {
                     dbMobile = dbMobile.filter(x => x.id !== id);
-                    localStorage.setItem('masotto_assets_mobile_db', JSON.stringify(dbMobile));
+                    localStorage.setItem(assetStorageKey('assets_mobile'), JSON.stringify(dbMobile));
                 } else {
                     dbStruct = dbStruct.filter(x => x.id !== id);
-                    localStorage.setItem('masotto_structural_assets_db', JSON.stringify(dbStruct));
+                    localStorage.setItem(assetStorageKey('structural_assets'), JSON.stringify(dbStruct));
                 }
                 if(window.msCommitCurrentChanges) window.msCommitCurrentChanges();
                 renderAssets(); closeModal();
@@ -362,7 +371,7 @@
     ["audit.html","Audit","clipboard-check"],
     ["manutenzione.html","Manutenzione","wrench"],
     ["prenotazioni.html","Prenotazioni","calendar"],
-    ["FINANZE.html","Finanze","pie-chart"],
+    ["finanze.html","Finanze","pie-chart"],
     ["sicurezza.html","Sicurezza","shield"]
   ];
 
@@ -390,12 +399,18 @@
     mainWrap.prepend(topbar);
     document.getElementById("msToggle").addEventListener("click", ()=>{ sidebar.classList.toggle("open"); });
     
-    // TASTO SYNC
-    document.getElementById("msSyncBtn").addEventListener("click", ()=>{ 
-      localStorage.removeItem('masotto_assets_mobile_db'); 
-      localStorage.removeItem('masotto_structural_assets_db'); 
-      location.reload(); 
-    });
+	    // TASTO SYNC
+	    document.getElementById("msSyncBtn").addEventListener("click", ()=>{ 
+	      localStorage.removeItem('masotto_assets_mobile_db'); 
+	      localStorage.removeItem('masotto_structural_assets_db'); 
+	      try {
+	        if (window.assetStorageKey) {
+	          localStorage.removeItem(window.assetStorageKey('assets_mobile'));
+	          localStorage.removeItem(window.assetStorageKey('structural_assets'));
+	        }
+	      } catch(e) {}
+	      location.reload(); 
+	    });
   }
   document.addEventListener("DOMContentLoaded", ()=>{ mountSidebar(); if(window.lucide) window.lucide.createIcons(); });
 })();
