@@ -1,38 +1,29 @@
-# 2EMME Multiproperty Adapter
+# 2M MultiProperty
 
-Questa versione mantiene la grafica e le logiche operative della piattaforma Masotto originale, ma sostituisce il database single-property con un adattatore multiproprieta generato da `2mdb_v22.json`.
+Questa è la piattaforma multiproperty 2M. Non è il progetto Masotto.
 
-## Come funziona
+## Regola architetturale canonica
 
-- `masotto_db.js` espone `window.MASOTTO_MULTIPROPERTY_DB` con i 5 alloggi canonici.
-- `ms_core.js` seleziona l'alloggio attivo e popola le vecchie chiavi localStorage (`masotto_booking_db`, `masotto_maint_db`, `masotto_finance_db`, ecc.).
-- Le pagine continuano a leggere le stesse strutture dati della versione single-property.
-- Il selettore nella sidebar cambia alloggio e ricarica la pagina con i dati coerenti.
-- Le modifiche locali vengono mantenute separatamente per ogni alloggio tramite chiavi `2m_property_state_*`.
-- Il selettore include `Tutti alloggi 2EMME`, vista aggregata di Heritage, Nest, Suite e Studio; Masotto Terrace View e' escluso.
-- Il pulsante `Salva Modifiche` nella sidebar consolida le modifiche CRUD locali per l'alloggio attivo.
+- **2M MultiProperty** è il nome funzionale della piattaforma attiva.
+- **Masotto Terrace View** è uno dei singoli immobili gestiti dalla piattaforma, al pari di Heritage, Nest, Suite e Studio.
+- Il codice, la UI e la documentazione attiva non devono usare "Masotto" come namespace generale della piattaforma.
+- I file storici con prefisso `masotto_` sono da considerare **legacy del prototipo single-property** e non fonte canonica della nuova architettura.
+- Le nuove pagine non devono dipendere da `masotto_db.js`, `masotto_database.js`, `masotto_complete_database.json` o dalle vecchie chiavi `masotto_*` di localStorage.
 
-## Alloggi collegati
+## Fonte dati canonica
 
-- `T29_9` - The NoLo Heritage
-- `B32_718` - The NoLo Nest
-- `B32_719` - The NoLo Suite
-- `CH1_715` - The NoLo Studio
-- `MASOTTO4_39` - Masotto Terrace View
+La fonte operativa della piattaforma è Airtable `2EMME Asset Master 2026` e le sue tabelle collegate. Snapshot JSON e file legacy restano solo come archivio/scambio, non come sorgente primaria della UI.
 
-## Fonte dati
+## Alloggi
 
-Fonte strutturata: `2mdb_v22.json`.
+- `T29_9` — The NoLo Heritage
+- `B32_718` — The NoLo Nest
+- `B32_719` — The NoLo Suite
+- `CH1_715` — The NoLo Studio
+- `MASOTTO4_39` — Masotto Terrace View
 
-Il file include anagrafica, catasto, asset, utenze, bollette, prenotazioni, manutenzioni, assicurazioni e KPI di controllo dove disponibili.
+`MASOTTO4_39` è quindi soltanto l'identificatore di uno dei cinque immobili, non il nome del sistema.
 
-Fonte asset / audit 3matrix: `asset_database_final-copia.json`, importato in `asset_3matrix_final`.
+## Direzione di migrazione
 
-## Profili fiscali operativi
-
-- `MASOTTO4_39` - Masotto Terrace View: LT non imprenditoriale, cedolare secca, niente IVA.
-- `T29_9`, `B32_718`, `B32_719`, `CH1_715`: gestione sotto societa in regime forfettario, niente IVA, coefficiente redditivita 40%, imposta 5% sul 40% del fatturato imponibile.
-
-## Nota saldo Finanze
-
-La vista 2026 non riporta piu' automaticamente il saldo 2025 come fondo iniziale, per evitare doppio conteggio quando il saldo 2025 e' gia' considerato saldo attuale.
+Le pagine attive vengono migrate verso un core `2m_*` multiproperty e verso endpoint server-side che leggono Airtable. Il vecchio adattatore basato su `window.MASOTTO_MULTIPROPERTY_DB`, `ms_core.js` e chiavi localStorage `masotto_*` è una compatibilità transitoria da eliminare, non l'architettura finale.
