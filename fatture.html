@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2EMME - Fatture e Ricevute</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="masotto_db.js"></script>
+  <script src="ms_core.js"></script>
+  <style>
+    :root{--bg:#080c10;--panel:#0f151a;--border:rgba(255,255,255,.10);--teal:#2dd4bf;--brand:#004D54;}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;background:var(--bg);color:#fff;font-family:'Plus Jakarta Sans',sans-serif}
+    .main{min-height:100vh;padding:2rem;background:radial-gradient(circle at top right,#112a2e 0%,#080c10 42%)}
+    .card{background:rgba(15,21,26,.96);border:1px solid var(--border);border-radius:16px;box-shadow:0 18px 45px rgba(0,0,0,.22)}
+    .field{width:100%;background:#1e293b;border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:10px 12px;outline:none}
+    .field:focus{border-color:rgba(45,212,191,.7);box-shadow:0 0 0 3px rgba(45,212,191,.08)}
+    label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;font-weight:800;margin-bottom:5px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;padding:10px 14px;font-weight:800;font-size:13px;cursor:pointer;border:1px solid transparent}
+    .btn-primary{background:var(--teal);color:#032b2f}.btn-dark{background:#18212b;border-color:rgba(255,255,255,.10);color:#fff}.btn-warn{background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.35);color:#fbbf24}
+    .kpi{border-left:4px solid var(--teal)}
+    table{width:100%;border-collapse:collapse} th,td{padding:10px 9px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;font-size:12px} th{font-size:10px;text-transform:uppercase;color:#94a3b8;letter-spacing:.06em}
+    .status-ok{color:#34d399}.status-warn{color:#fbbf24}.status-bad{color:#f87171}
+    .ms-sidebar{position:fixed;inset:0 auto 0 0;width:260px;background:rgba(15,23,42,.96);border-right:1px solid var(--border);padding:20px;z-index:50;overflow-y:auto;display:flex;flex-direction:column}
+    .ms-main{margin-left:260px;min-height:100vh;display:flex;flex-direction:column}
+    .ms-nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#94a3b8;font-weight:600;text-decoration:none}.ms-nav a:hover{background:rgba(255,255,255,.05);color:#fff}.ms-nav a.active{background:var(--brand);color:var(--teal);border-left:3px solid var(--teal)}
+    .ms-chip{font:600 10px monospace;color:var(--teal);background:rgba(45,212,191,.10);border:1px solid rgba(45,212,191,.25);padding:2px 8px;border-radius:999px;display:inline-block}
+    @media(max-width:900px){.ms-sidebar{transform:translateX(-105%);transition:.2s}.ms-sidebar.open{transform:translateX(0)}.ms-main{margin-left:0}.main{padding:1rem}.ms-topbar{position:sticky;top:0;z-index:40;backdrop-filter:blur(10px);background:rgba(11,18,32,.75);border-bottom:1px solid var(--border)}}
+    .doc-sheet{background:white;color:#17212b;width:210mm;min-height:297mm;margin:0 auto;padding:17mm 16mm 15mm;font-family:Arial,sans-serif;font-size:10.5pt}
+    .doc-brand{color:#007b80;font-weight:800;letter-spacing:.03em}.doc-title{color:#006e73;font-size:23pt;font-weight:800}.doc-section{margin-top:14px;padding-top:7px;border-top:1px solid #dfe7e8;color:#818b8e;font-weight:800;font-size:10pt;letter-spacing:.04em}.doc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.doc-table{width:100%;border-collapse:collapse}.doc-table th,.doc-table td{border-bottom:1px solid #dfe7e8;padding:6px 4px;font-size:9.5pt}.doc-table th{color:#687477;text-transform:none;font-size:8.5pt}.doc-total{font-weight:800;color:#006e73}.doc-note{font-size:7.8pt;color:#687477;line-height:1.35}.doc-sign{font-family:cursive;font-size:18pt;color:#222}
+    #printStage{position:fixed;left:-99999px;top:0;z-index:-1}
+    @media print{body>*:not(#printStage){display:none!important}#printStage{position:static!important;display:block!important}#printStage .doc-sheet{box-shadow:none;margin:0}}
+  </style>
+</head>
+<body>
+  <div>
+    <main class="main">
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-7">
+        <div>
+          <div class="text-xs font-bold uppercase tracking-[.18em] text-teal-400 mb-2">2EMME Control</div>
+          <h1 class="text-3xl font-extrabold">Fatture & Ricevute</h1>
+          <p class="text-sm text-slate-400 mt-1">Generazione documenti dalla prenotazione madre, con rate, incassi cumulativi e saldo residuo.</p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button class="btn btn-dark" onclick="refreshData()"><i data-lucide="refresh-cw" class="w-4 h-4"></i>Aggiorna prenotazioni</button>
+          <button class="btn btn-dark" onclick="location.href='prenotazioni.html'"><i data-lucide="calendar" class="w-4 h-4"></i>Prenotazioni</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
+        <div class="card kpi p-4"><div class="text-[10px] uppercase font-extrabold text-slate-500">Prenotazioni disponibili</div><div id="kpiBookings" class="text-2xl font-extrabold mt-1">0</div></div>
+        <div class="card kpi p-4"><div class="text-[10px] uppercase font-extrabold text-slate-500">Documenti emessi</div><div id="kpiDocs" class="text-2xl font-extrabold mt-1">0</div></div>
+        <div class="card kpi p-4"><div class="text-[10px] uppercase font-extrabold text-slate-500">Totale contratti</div><div id="kpiContracts" class="text-2xl font-extrabold mt-1">€ 0</div></div>
+        <div class="card kpi p-4"><div class="text-[10px] uppercase font-extrabold text-slate-500">Residuo registrato</div><div id="kpiResidual" class="text-2xl font-extrabold mt-1 text-amber-300">€ 0</div></div>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
+        <section class="card p-5 xl:col-span-5">
+          <div class="flex items-center justify-between gap-3 mb-4">
+            <div><h2 class="font-extrabold flex items-center gap-2"><i data-lucide="search" class="w-4 h-4 text-teal-400"></i>1. Seleziona prenotazione</h2><p class="text-[11px] text-slate-500 mt-1">La prenotazione resta unica anche se viene pagata a rate.</p></div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <div class="md:col-span-2"><label>Ricerca ospite / riferimento</label><input id="bookingSearch" class="field" placeholder="Nome, ID prenotazione..." oninput="renderBookingOptions()"></div>
+            <div><label>Anno</label><select id="bookingYear" class="field" onchange="renderBookingOptions()"><option value="ALL">Tutti</option><option value="2026" selected>2026</option><option value="2025">2025</option></select></div>
+          </div>
+          <label>Prenotazione</label>
+          <select id="bookingSelect" class="field" size="8" onchange="selectBooking()"></select>
+          <div id="bookingStatus" class="text-[11px] text-slate-500 mt-3"></div>
+        </section>
+
+        <section class="card p-5 xl:col-span-7">
+          <div class="flex items-center justify-between gap-3 mb-4"><div><h2 class="font-extrabold flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-teal-400"></i>2. Quadro economico della prenotazione</h2><p class="text-[11px] text-slate-500 mt-1">Importi modificabili prima dell'emissione; il totale prenotazione non viene sostituito dalla singola rata.</p></div></div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div><label>Ospite</label><input id="guestName" class="field"></div>
+            <div><label>Rif. prenotazione / Smoobu</label><input id="bookingRef" class="field"></div>
+            <div><label>Alloggio</label><input id="propertyName" class="field"></div>
+            <div><label>Periodo contratto</label><input id="contractPeriod" class="field"></div>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4">
+            <div><label>Corrispettivo soggiorno</label><input id="stayAmount" class="field" type="number" step="0.01" oninput="recalcFromFields()"></div>
+            <div><label>Pulizie</label><input id="cleaningAmount" class="field" type="number" step="0.01" oninput="recalcFromFields()"></div>
+            <div><label>City tax</label><input id="cityTaxAmount" class="field" type="number" step="0.01" oninput="recalcFromFields()"></div>
+            <div><label>Service / altri extra</label><input id="serviceAmount" class="field" type="number" step="0.01" oninput="recalcFromFields()"></div>
+            <div><label>Totale prenotazione</label><input id="bookingTotal" class="field font-extrabold text-teal-300" type="number" step="0.01" oninput="recalcPayments()"></div>
+          </div>
+          <div id="economicCheck" class="mt-3 text-[11px]"></div>
+        </section>
+
+        <section class="card p-5 xl:col-span-7">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+            <div><h2 class="font-extrabold flex items-center gap-2"><i data-lucide="landmark" class="w-4 h-4 text-teal-400"></i>3. Conto progressivo del contratto</h2><p class="text-[11px] text-slate-500 mt-1">Saldo iniziale → rata 1 → rata 2 → … → saldo residuo.</p></div>
+            <button class="btn btn-dark" onclick="openPaymentForm()"><i data-lucide="plus" class="w-4 h-4"></i>Registra rata</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table>
+              <thead><tr><th>#</th><th>Data</th><th>Periodo coperto</th><th>Payment ID</th><th class="text-right">Incasso</th><th class="text-right">Residuo</th><th></th></tr></thead>
+              <tbody id="paymentRows"></tbody>
+            </table>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+            <div class="bg-black/20 rounded-xl p-3"><div class="text-[10px] uppercase font-bold text-slate-500">Saldo iniziale</div><div id="sumInitial" class="font-mono font-extrabold mt-1">€ 0</div></div>
+            <div class="bg-black/20 rounded-xl p-3"><div class="text-[10px] uppercase font-bold text-slate-500">Già incassato</div><div id="sumPaid" class="font-mono font-extrabold mt-1 text-emerald-300">€ 0</div></div>
+            <div class="bg-black/20 rounded-xl p-3"><div class="text-[10px] uppercase font-bold text-slate-500">Rate registrate</div><div id="sumInstallments" class="font-mono font-extrabold mt-1">0</div></div>
+            <div class="bg-black/20 rounded-xl p-3"><div class="text-[10px] uppercase font-bold text-slate-500">Saldo residuo</div><div id="sumResidual" class="font-mono font-extrabold mt-1 text-amber-300">€ 0</div></div>
+          </div>
+        </section>
+
+        <section class="card p-5 xl:col-span-5">
+          <h2 class="font-extrabold flex items-center gap-2 mb-4"><i data-lucide="receipt" class="w-4 h-4 text-teal-400"></i>4. Genera documento</h2>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label>Tipo documento</label><select id="docType" class="field" onchange="updateDocNumberPreview()"><option value="ricevuta">Ricevuta amministrativa</option><option value="fattura">Fattura - PDF amministrativo</option></select></div>
+            <div><label>Numero</label><input id="docNumber" class="field font-mono" readonly></div>
+            <div><label>Data emissione</label><input id="issueDate" class="field" type="date"></div>
+            <div><label>Metodo pagamento</label><input id="paymentMethod" class="field" value="Bonifico / Carta di Credito"></div>
+          </div>
+          <div class="mt-4 p-3 rounded-xl border border-amber-500/25 bg-amber-500/5 text-[11px] text-amber-200 leading-relaxed">
+            La pagina genera il PDF amministrativo e registra il documento nel gestionale. L'eventuale fattura elettronica e la trasmissione allo SDI restano un adempimento separato finché non viene collegato un servizio di fatturazione elettronica.
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+            <button class="btn btn-dark" onclick="previewDocument()"><i data-lucide="eye" class="w-4 h-4"></i>Anteprima</button>
+            <button class="btn btn-primary" onclick="generateDocument()"><i data-lucide="file-down" class="w-4 h-4"></i>Registra e genera PDF</button>
+          </div>
+          <div class="mt-5 pt-4 border-t border-white/10">
+            <div class="text-[10px] uppercase font-extrabold text-slate-500 mb-2">Ultimi documenti</div>
+            <div id="recentDocs" class="space-y-2"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="paymentModal" class="fixed inset-0 hidden items-center justify-center bg-black/80 backdrop-blur-sm z-[100] p-4">
+    <div class="card p-5 w-full max-w-2xl">
+      <div class="flex justify-between items-center mb-5"><div><h3 class="text-xl font-extrabold">Registra pagamento / rata</h3><p class="text-xs text-slate-500 mt-1">Il pagamento viene collegato alla prenotazione selezionata.</p></div><button class="btn btn-dark" onclick="closePaymentForm()"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div><label>Data pagamento</label><input id="payDate" class="field" type="date"></div>
+        <div><label>Importo pagato</label><input id="payAmount" class="field" type="number" step="0.01"></div>
+        <div><label>Periodo dal</label><input id="payFrom" class="field" type="date"></div>
+        <div><label>Periodo al</label><input id="payTo" class="field" type="date"></div>
+        <div><label>Payment ID</label><input id="paymentId" class="field"></div>
+        <div><label>Metodo</label><input id="payMethod" class="field" value="Bonifico"></div>
+      </div>
+      <div class="flex justify-end gap-2 mt-5"><button class="btn btn-dark" onclick="closePaymentForm()">Annulla</button><button class="btn btn-primary" onclick="savePayment()"><i data-lucide="check" class="w-4 h-4"></i>Registra rata</button></div>
+    </div>
+  </div>
+
+  <div id="previewModal" class="fixed inset-0 hidden bg-black/85 backdrop-blur-sm z-[110] overflow-auto p-4 md:p-8">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex justify-between items-center mb-3"><div class="text-sm font-bold">Anteprima documento</div><button class="btn btn-dark" onclick="closePreview()"><i data-lucide="x" class="w-4 h-4"></i>Chiudi</button></div>
+      <div id="previewHost"></div>
+    </div>
+  </div>
+  <div id="printStage"></div>
+
+<script>
+const CANONICAL_BASELINE_2026 = 16;
+let bookings = [];
+let payments = [];
+let documents = [];
+let selected = null;
+let selectedKey = '';
+
+const euro = n => new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(Number(n)||0);
+const num = v => { const n = parseFloat(v); return Number.isFinite(n)?n:0; };
+const esc = s => String(s ?? '').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+function parseLS(key, fallback=[]){try{const v=JSON.parse(localStorage.getItem(key)||'null');return Array.isArray(v)?v:fallback}catch(e){return fallback}}
+function isoToday(){ return new Date().toISOString().slice(0,10); }
+function formatDate(v){ if(!v)return '-'; const d=new Date(String(v).slice(0,10)+'T00:00:00'); return Number.isNaN(d.getTime())?String(v):d.toLocaleDateString('it-IT'); }
+function dateAdd(start,days){const d=new Date(start+'T00:00:00'); if(Number.isNaN(d.getTime()))return ''; d.setDate(d.getDate()+days); return d.toISOString().slice(0,10)}
+function activeProp(){return ((window.MASOTTO_DB||{}).property_master||[])[0]||{};}
+function bookingRef(b){return String(b.booking_ref||b.booking_reference||b.reservation_id||b.smoobu_id||b.reference||b.original_id||b.id||'');}
+function bookingKey(b){return `${b.source_property_id||activeProp().property_id||'PROP'}::${bookingRef(b)}`;}
+function propertyLabel(b){return b.source_property_name||b.property_name||b.apartment||b.alloggio||activeProp().name||'2EMME Apartments';}
+function checkIn(b){return b.check_in||b.checkin||b.start_date||'';}
+function nightsOf(b){let n=parseInt(b.nights||b.notti||0);if(n)return n;const a=new Date(checkIn(b)),z=new Date(b.check_out||b.checkout||b.end_date||'');return (!isNaN(a)&&!isNaN(z))?Math.max(1,Math.round((z-a)/86400000)):1}
+function checkOut(b){return b.check_out||b.checkout||b.end_date||dateAdd(checkIn(b),nightsOf(b));}
+function guestOf(b){return b.guest||b.ospite||b.guest_name||b.name||'Ospite';}
+function getField(b,...names){for(const n of names){if(b[n]!==undefined&&b[n]!==null&&b[n]!=='')return b[n]}return null}
+function amountsOf(b){
+  const nights=nightsOf(b);
+  const gross=num(getField(b,'contract_total_eur','total_booking_eur','gross_total_eur','gross_eur','lordo','total_eur'));
+  const cleaningRaw=getField(b,'cleaning_eur','pulizie','cleaning');
+  const cleaning=cleaningRaw===null?(nights<=14?45:80):num(cleaningRaw);
+  const city=num(getField(b,'city_tax_eur','city_tax','tassa_soggiorno_eur'));
+  const service=num(getField(b,'service_eur','service_extra_eur','other_extra_eur','extra_eur'));
+  const explicitStay=getField(b,'accommodation_eur','stay_eur','corrispettivo_soggiorno','net_stay_eur');
+  const stay=explicitStay===null?Math.max(0,gross-cleaning-city-service):num(explicitStay);
+  const total=gross||stay+cleaning+city+service;
+  return {stay,cleaning,city,service,total};
+}
+function bookingPayments(){return payments.filter(p=>p.booking_key===selectedKey).sort((a,b)=>String(a.payment_date).localeCompare(String(b.payment_date)));}
+function paidForSelected(){return bookingPayments().reduce((s,p)=>s+num(p.amount_paid_eur),0);}
+function getFormAmounts(){return {stay:num(stayAmount.value),cleaning:num(cleaningAmount.value),city:num(cityTaxAmount.value),service:num(serviceAmount.value),total:num(bookingTotal.value)}}
+
+async function refreshData(){
+  if(window.ensureMasterDB) await window.ensureMasterDB(false);
+  const masterBookings=(window.MASOTTO_DB&&Array.isArray(window.MASOTTO_DB.bookings))?window.MASOTTO_DB.bookings:[];
+  const lsBookings=parseLS('masotto_booking_db',[]);
+  bookings=(lsBookings.length?lsBookings:masterBookings).slice();
+  payments=parseLS('masotto_guest_payments_db',Array.isArray((window.MASOTTO_DB||{}).guest_payments)?window.MASOTTO_DB.guest_payments:[]);
+  documents=parseLS('masotto_invoice_db',Array.isArray((window.MASOTTO_DB||{}).invoices)?window.MASOTTO_DB.invoices:[]);
+  kpiBookings.textContent=bookings.length;
+  renderBookingOptions(); renderRecentDocs(); updateKpis();
+}
+function renderBookingOptions(){
+  const q=(bookingSearch.value||'').toLowerCase().trim(); const y=bookingYear.value;
+  const rows=bookings.filter(b=>{const date=checkIn(b);const year=date?String(date).slice(0,4):'';const hay=`${guestOf(b)} ${bookingRef(b)} ${propertyLabel(b)}`.toLowerCase();return (y==='ALL'||year===y)&&(!q||hay.includes(q));}).sort((a,b)=>String(checkIn(b)).localeCompare(String(checkIn(a))));
+  bookingSelect.innerHTML=rows.map(b=>`<option value="${esc(bookingKey(b))}">${esc(formatDate(checkIn(b)))} · ${esc(guestOf(b))} · ${esc(propertyLabel(b))} · Rif ${esc(bookingRef(b))}</option>`).join('');
+  bookingStatus.textContent=`${rows.length} prenotazioni visualizzate`;
+  if(selectedKey&&rows.some(b=>bookingKey(b)===selectedKey)){bookingSelect.value=selectedKey}else if(rows.length){bookingSelect.selectedIndex=0;selectBooking()}else{selected=null;selectedKey='';clearSelected()}
+}
+function selectBooking(){
+  selectedKey=bookingSelect.value; selected=bookings.find(b=>bookingKey(b)===selectedKey)||null;if(!selected)return clearSelected();
+  const a=amountsOf(selected);
+  guestName.value=guestOf(selected);bookingRef.value=bookingRef(selected);propertyName.value=propertyLabel(selected);contractPeriod.value=`${formatDate(checkIn(selected))} – ${formatDate(checkOut(selected))} (${nightsOf(selected)} notti)`;
+  stayAmount.value=a.stay.toFixed(2);cleaningAmount.value=a.cleaning.toFixed(2);cityTaxAmount.value=a.city.toFixed(2);serviceAmount.value=a.service.toFixed(2);bookingTotal.value=a.total.toFixed(2);
+  recalcFromFields();renderPayments();updateDocNumberPreview();
+}
+function clearSelected(){guestName.value='';bookingRef.value='';propertyName.value='';contractPeriod.value='';stayAmount.value='';cleaningAmount.value='';cityTaxAmount.value='';serviceAmount.value='';bookingTotal.value='';paymentRows.innerHTML='';recalcPayments();}
+function recalcFromFields(){const a=getFormAmounts();const components=a.stay+a.cleaning+a.city+a.service;if(Math.abs(components-a.total)>0.01){economicCheck.className='mt-3 text-[11px] status-warn';economicCheck.textContent=`Attenzione: le componenti sommano ${euro(components)}, mentre il totale prenotazione è ${euro(a.total)}. Verificare prima dell'emissione.`}else{economicCheck.className='mt-3 text-[11px] status-ok';economicCheck.textContent='Quadratura economica corretta: soggiorno + pulizie + city tax + extra = totale prenotazione.'}recalcPayments();updateKpis();}
+function recalcPayments(){const total=num(bookingTotal.value);const paid=paidForSelected();sumInitial.textContent=euro(total);sumPaid.textContent=euro(paid);sumInstallments.textContent=bookingPayments().length;sumResidual.textContent=euro(Math.max(0,total-paid));}
+function renderPayments(){
+  const total=num(bookingTotal.value);let cumulative=0;const rows=bookingPayments();paymentRows.innerHTML=rows.length?'':`<tr><td colspan="7" class="text-slate-500">Nessun pagamento registrato per questa prenotazione.</td></tr>`;
+  rows.forEach((p,i)=>{cumulative+=num(p.amount_paid_eur);const residual=Math.max(0,total-cumulative);paymentRows.innerHTML+=`<tr><td>${i+1}</td><td>${esc(formatDate(p.payment_date))}</td><td>${esc(formatDate(p.period_from))} – ${esc(formatDate(p.period_to))}</td><td class="font-mono">${esc(p.payment_id||'-')}</td><td class="text-right text-emerald-300 font-mono">${euro(p.amount_paid_eur)}</td><td class="text-right text-amber-300 font-mono">${euro(residual)}</td><td class="text-right"><button class="text-red-300 text-xs font-bold" onclick="deletePayment('${esc(p.id)}')">Elimina</button></td></tr>`});recalcPayments();
+}
+function openPaymentForm(){if(!selected)return alert('Seleziona prima una prenotazione.');const rows=bookingPayments();payDate.value=isoToday();payAmount.value='';payFrom.value=rows.length?(rows[rows.length-1].period_to?dateAdd(rows[rows.length-1].period_to,1):checkIn(selected)):checkIn(selected);payTo.value=payFrom.value?dateAdd(payFrom.value,6):'';paymentId.value=`2M-${bookingRef(selected)}-P${String(rows.length+1).padStart(2,'0')}`;payMethod.value=paymentMethod.value||'Bonifico';paymentModal.classList.remove('hidden');paymentModal.classList.add('flex');if(window.lucide)lucide.createIcons();}
+function closePaymentForm(){paymentModal.classList.add('hidden');paymentModal.classList.remove('flex');}
+function savePayment(){const amount=num(payAmount.value);if(!amount)return alert('Inserire l’importo pagato.');const p={id:`PAY-${Date.now()}`,booking_key:selectedKey,booking_ref:bookingRef(selected),guest:guestOf(selected),property_name:propertyLabel(selected),installment_no:bookingPayments().length+1,payment_date:payDate.value||isoToday(),period_from:payFrom.value,period_to:payTo.value,payment_id:paymentId.value||`PAY-${Date.now()}`,method:payMethod.value||'',amount_paid_eur:amount};payments.push(p);persistFinanceState();closePaymentForm();renderPayments();updateKpis();}
+function deletePayment(id){if(!confirm('Eliminare questa rata registrata?'))return;payments=payments.filter(p=>p.id!==id);persistFinanceState();renderPayments();updateKpis();}
+function persistFinanceState(){localStorage.setItem('masotto_guest_payments_db',JSON.stringify(payments));localStorage.setItem('masotto_invoice_db',JSON.stringify(documents));if(window.msCommitCurrentChanges)window.msCommitCurrentChanges();}
+function nextDocumentNumber(){const year=parseInt((issueDate.value||isoToday()).slice(0,4))||2026;let max=year===2026?CANONICAL_BASELINE_2026:0;documents.filter(d=>d.year===year).forEach(d=>{const m=String(d.number||'').match(/\/(\d+)$/);if(m)max=Math.max(max,parseInt(m[1]))});return `${year}/${String(max+1).padStart(3,'0')}`;}
+function updateDocNumberPreview(){docNumber.value=nextDocumentNumber();}
+function docSnapshot(){if(!selected)throw new Error('Seleziona prima una prenotazione.');const a=getFormAmounts();const paid=paidForSelected();const residual=Math.max(0,a.total-paid);return {type:docType.value,number:docNumber.value||nextDocumentNumber(),issue_date:issueDate.value||isoToday(),booking_key:selectedKey,booking_ref:bookingRef.value||bookingRef(selected),guest:guestName.value||guestOf(selected),property_name:propertyName.value||propertyLabel(selected),contract_period:contractPeriod.value,check_in:checkIn(selected),check_out:checkOut(selected),nights:nightsOf(selected),pax:parseInt(selected.pax||selected.guests||1)||1,stay:a.stay,cleaning:a.cleaning,city:a.city,service:a.service,total:a.total,paid,residual,payments:bookingPayments().map(x=>({...x})),method:paymentMethod.value||'',property_meta:{...activeProp()}};}
+function issuerHTML(meta){const legal=meta.company_legal_name||meta.receipt_issuer_name||'2EMME RE&CONSULTING; di Matteo Masella';const address=meta.company_registered_office||'Via Pietro Colletta 70, 20137 Milano (MI), Italia';const vat=meta.company_vat_number||'IT13411850962';const tax=meta.company_tax_code||'MSLMTT79E26B354D';const rea=meta.company_rea||'MI 2721793';const sdi=meta.company_sdi||'JKKZDGR';return `<b>${esc(legal)}</b><br>${esc(address)}<br>P.IVA ${esc(vat)} - C.F. ${esc(tax)} - R.E.A. ${esc(rea)} - Codice SDI ${esc(sdi)}`;}
+function documentHTML(s){
+  const typeLabel=s.type==='fattura'?'FATTURA - PDF AMMINISTRATIVO':'RICEVUTA DI PAGAMENTO';let cum=0;
+  const payRows=s.payments.length?s.payments.map((p,i)=>{cum+=num(p.amount_paid_eur);return `<tr><td>${i+1}</td><td>${esc(formatDate(p.payment_date))}</td><td>${esc(formatDate(p.period_from))} – ${esc(formatDate(p.period_to))}</td><td>${esc(p.payment_id||'-')}</td><td style="text-align:right">${euro(p.amount_paid_eur)}</td><td style="text-align:right">${euro(Math.max(0,s.total-cum))}</td></tr>`}).join(''):`<tr><td colspan="6">Nessun pagamento registrato.</td></tr>`;
+  return `<div class="doc-sheet">
+    <div style="display:flex;justify-content:space-between;gap:25px;align-items:flex-start"><div><div class="doc-brand" style="font-size:22pt">2EMME</div><div style="font-size:9pt;color:#b05b63;font-weight:bold">APARTMENTS · MILANO</div></div><div style="text-align:right"><div class="doc-title">${typeLabel}</div><div style="font-weight:bold;margin-top:3px">N. ${esc(s.number)}</div><div>Data emissione: ${esc(formatDate(s.issue_date))}</div></div></div>
+    <div class="doc-section">PROPRIETÀ</div><div>${issuerHTML(s.property_meta)}</div>
+    <div class="doc-section">DATI CLIENTE</div><div class="doc-grid"><div><b>OSPITE</b><br>${esc(s.guest)}</div><div><b>RIF. PRENOTAZIONE</b><br>${esc(s.booking_ref)}</div></div>
+    <div class="doc-section">DETTAGLI SOGGIORNO E CONTRATTO</div>
+    <table class="doc-table"><tr><td><b>Appartamento</b></td><td>${esc(s.property_name)}</td></tr><tr><td><b>Periodo contratto</b></td><td>${esc(s.contract_period)}</td></tr><tr><td><b>Notti</b></td><td>${esc(s.nights)}</td></tr><tr><td><b>Modalità pagamento</b></td><td>${esc(s.method||'Come da contratto')}</td></tr></table>
+    <div class="doc-section">RIEPILOGO COSTI, SCONTI E SPESE</div>
+    <table class="doc-table"><thead><tr><th>Descrizione</th><th style="text-align:right">Importo</th></tr></thead><tbody><tr><td>Corrispettivo soggiorno</td><td style="text-align:right">${euro(s.stay)}</td></tr><tr><td>Spese pulizia finale / servizi pulizia</td><td style="text-align:right">${euro(s.cleaning)}</td></tr><tr><td>Imposta di soggiorno Comune di Milano</td><td style="text-align:right">${euro(s.city)}</td></tr>${s.service?`<tr><td>Service / altri extra</td><td style="text-align:right">${euro(s.service)}</td></tr>`:''}<tr class="doc-total"><td>TOTALE PRENOTAZIONE / CONTRATTO</td><td style="text-align:right">${euro(s.total)}</td></tr></tbody></table>
+    <div class="doc-section">SITUAZIONE PAGAMENTI DEL CONTRATTO</div>
+    <table class="doc-table"><thead><tr><th>#</th><th>Data</th><th>Periodo coperto</th><th>Payment ID</th><th style="text-align:right">Incassato</th><th style="text-align:right">Residuo</th></tr></thead><tbody>${payRows}</tbody></table>
+    <table class="doc-table" style="margin-top:8px"><tr><td><b>Saldo iniziale contratto</b></td><td style="text-align:right">${euro(s.total)}</td></tr><tr><td><b>Totale incassato cumulativo</b></td><td style="text-align:right">${euro(s.paid)}</td></tr><tr class="doc-total"><td>SALDO RESIDUO</td><td style="text-align:right">${euro(s.residual)}</td></tr></table>
+    <div class="doc-section">NOTE</div><div class="doc-note">L'imposta di soggiorno è evidenziata separatamente quale importo riscosso per conto del Comune di Milano secondo la disciplina applicabile. La presente ricevuta attesta gli importi registrati come incassati e mantiene evidenza del valore complessivo della prenotazione. La cauzione, se presente, è separata in quanto deposito rimborsabile e non costituisce canone. Per i documenti qualificati come fattura, questo PDF non costituisce di per sé trasmissione al Sistema di Interscambio (SDI).</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:28px"><div class="doc-note">Documento generato dal sistema 2EMME<br>Rif. prenotazione: ${esc(s.booking_ref)}</div><div style="text-align:center"><div class="doc-sign">Matteo Masella</div><div class="doc-note">Firma / Timbro</div></div></div>
+  </div>`;
+}
+function previewDocument(){try{const s=docSnapshot();previewHost.innerHTML=documentHTML(s);previewModal.classList.remove('hidden');if(window.lucide)lucide.createIcons();}catch(e){alert(e.message)}}
+function closePreview(){previewModal.classList.add('hidden');previewHost.innerHTML='';}
+async function generateDocument(){
+  let s;try{s=docSnapshot()}catch(e){return alert(e.message)}
+  const components=s.stay+s.cleaning+s.city+s.service;if(Math.abs(components-s.total)>0.01&&!confirm(`Le componenti (${euro(components)}) non coincidono con il totale prenotazione (${euro(s.total)}). Generare comunque?`))return;
+  const record={id:`DOC-${Date.now()}`,year:parseInt(s.issue_date.slice(0,4)),number:s.number,type:s.type,booking_key:s.booking_key,booking_ref:s.booking_ref,guest:s.guest,property_name:s.property_name,issued_at:s.issue_date,total_booking_eur:s.total,paid_cumulative_eur:s.paid,residual_eur:s.residual};documents.push(record);persistFinanceState();renderRecentDocs();updateKpis();
+  const stage=document.getElementById('printStage');stage.innerHTML=documentHTML(s);const sheet=stage.firstElementChild;const filename=`2EMME_${s.type==='fattura'?'Fattura':'Ricevuta'}_${String(s.number).replace('/','-')}_${s.booking_ref}.pdf`;
+  try{if(window.html2pdf){await html2pdf().set({margin:0,filename,image:{type:'jpeg',quality:.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(sheet).save();}else{window.print();}}catch(e){console.error(e);window.print();}
+  updateDocNumberPreview();
+}
+function renderRecentDocs(){const rows=documents.slice().sort((a,b)=>String(b.issued_at).localeCompare(String(a.issued_at))).slice(0,6);recentDocs.innerHTML=rows.length?rows.map(d=>`<div class="flex justify-between items-center gap-3 bg-black/20 border border-white/5 rounded-lg px-3 py-2"><div><div class="text-xs font-bold">${esc((d.type==='fattura'?'Fattura':'Ricevuta')+' '+d.number)}</div><div class="text-[10px] text-slate-500">${esc(d.guest)} · ${esc(d.booking_ref)}</div></div><div class="text-right"><div class="text-xs font-mono">${euro(d.total_booking_eur)}</div><div class="text-[10px] text-amber-300">residuo ${euro(d.residual_eur)}</div></div></div>`).join(''):`<div class="text-xs text-slate-500">Nessun documento registrato.</div>`;}
+function updateKpis(){kpiDocs.textContent=documents.length;const allTotal=bookings.reduce((s,b)=>s+amountsOf(b).total,0);kpiContracts.textContent=euro(allTotal);const residual=documents.reduce((s,d)=>s+num(d.residual_eur),0);kpiResidual.textContent=euro(residual);}
+
+document.addEventListener('DOMContentLoaded',async()=>{issueDate.value=isoToday();if(window.msReady)await window.msReady(false);await refreshData();updateDocNumberPreview();if(window.lucide)lucide.createIcons();});
+</script>
+</body>
+</html>
