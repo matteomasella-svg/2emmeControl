@@ -1,98 +1,118 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>2EMME - Anagrafica Immobile</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="masotto_db.js"></script>
-<script src="ms_core.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>2M MultiProperty · Anagrafica</title>
 <style>
-:root{--bg:#071014;--panel:#0d171c;--panel2:#101d23;--border:rgba(255,255,255,.09);--muted:#8fa3b8;--accent:#2dd4bf}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh}.main{min-height:100vh;background:radial-gradient(circle at 48% 0,#103038 0,#071014 36%);padding:28px 32px 48px}.page-shell{width:100%;max-width:1500px;margin:0 auto}.page-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}.page-head h1{font-size:clamp(30px,3vw,46px);line-height:1.04;margin:0 0 8px;font-weight:800;letter-spacing:-.03em}.page-head p{margin:0;color:#9caebe;font-size:15px}.sync-pill{display:flex;align-items:center;gap:8px;padding:10px 13px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);font-size:12px;font-weight:700;color:#b7c4d1;white-space:nowrap}.sync-dot{width:8px;height:8px;border-radius:50%;background:#f59e0b}.sync-pill.ok .sync-dot{background:#10b981}.sync-pill.error .sync-dot{background:#ef4444}.notice{display:none;margin:0 0 20px;padding:14px 16px;border-radius:14px;border:1px solid rgba(239,68,68,.35);background:rgba(127,29,29,.18);color:#fecaca;font-size:13px;line-height:1.5}.notice.show{display:block}.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-bottom:18px}.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.card{min-width:0;background:linear-gradient(180deg,rgba(16,29,35,.96),rgba(10,19,24,.96));border:1px solid var(--border);border-radius:20px;padding:20px 20px 16px;box-shadow:0 18px 45px rgba(0,0,0,.18)}.card.teal{border-top:3px solid #2dd4bf}.card.purple{border-top:3px solid #a855f7}.card.amber{border-top:3px solid #f59e0b}.card.blue{border-top:3px solid #3b82f6}.card.green{border-top:3px solid #10b981}.card-head{display:flex;align-items:center;gap:10px;padding-bottom:14px;margin-bottom:8px;border-bottom:1px solid var(--border)}.card-head h2{font-size:18px;margin:0;font-weight:800}.card-head svg{width:18px;height:18px}.rows{display:flex;flex-direction:column}.row{display:grid;grid-template-columns:minmax(110px,36%) minmax(0,1fr);gap:18px;padding:12px 0;border-bottom:1px dashed rgba(255,255,255,.07);align-items:start}.row:last-child{border-bottom:0}.label{font-size:10px;line-height:1.35;text-transform:uppercase;letter-spacing:.07em;color:#8193a5;font-weight:800}.value{font-size:14px;line-height:1.45;text-align:right;font-weight:700;color:#f7fafc;overflow-wrap:anywhere}.value.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#5eead4}.subtle{color:#9fb0bf;font-weight:600}.table-wrap{overflow:auto;margin-top:8px}.table{width:100%;border-collapse:collapse;min-width:650px}.table th,.table td{padding:11px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;text-align:left}.table th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#8295a7}.table td:last-child,.table th:last-child{text-align:right}.empty{padding:20px;color:#8193a5;font-size:13px;text-align:center}.ms-sidebar{position:fixed;inset:0 auto 0 0;width:236px;background:rgba(10,19,32,.98);border-right:1px solid var(--border);padding:16px;z-index:50;overflow-y:auto;display:flex;flex-direction:column}.ms-main{margin-left:236px;min-height:100vh}.ms-nav a{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;color:#92a4b8;font-weight:650;text-decoration:none;font-size:13px}.ms-nav a:hover{background:rgba(255,255,255,.05);color:white}.ms-nav a.active{background:#123439;color:#7ff6e3}.ms-chip{font:600 9px ui-monospace,SFMono-Regular,Menlo,monospace;color:#65e6d3;background:rgba(45,212,191,.1);border:1px solid rgba(45,212,191,.22);padding:2px 6px;border-radius:999px}.ms-topbar{display:none}
-@media(max-width:1220px){.grid-3{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-3 .card:last-child{grid-column:1/-1}}
-@media(max-width:900px){.ms-sidebar{transform:translateX(-105%);transition:.2s}.ms-sidebar.open{transform:translateX(0)}.ms-main{margin-left:0}.ms-topbar{display:flex;position:sticky;top:0;z-index:40;backdrop-filter:blur(10px);background:rgba(7,16,20,.82);border-bottom:1px solid var(--border)}.main{padding:20px}.grid-3,.grid-2{grid-template-columns:1fr}.grid-3 .card:last-child{grid-column:auto}.page-head{flex-direction:column}.sync-pill{align-self:flex-start}}
-@media(max-width:560px){.main{padding:16px 12px 30px}.card{padding:17px 15px}.row{grid-template-columns:1fr;gap:5px}.value{text-align:left}.page-head h1{font-size:31px}}
+:root{--bg:#071014;--side:#0a141a;--panel:#0f1b22;--panel2:#122129;--line:#20323c;--text:#f4f7f9;--muted:#8ea1ad;--teal:#42d8c8;--green:#4ade80;--red:#fb7185;--amber:#fbbf24;--blue:#60a5fa;--purple:#c084fc}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{min-height:100vh}.app{display:grid;grid-template-columns:244px minmax(0,1fr);min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;background:linear-gradient(180deg,#0a151b,#081116);border-right:1px solid var(--line);padding:22px 16px;display:flex;flex-direction:column;gap:18px;overflow:auto}.brand{padding:0 10px 10px}.brand strong{font-size:22px;letter-spacing:-.04em}.brand span{display:block;color:var(--muted);font-size:11px;margin-top:4px;text-transform:uppercase;letter-spacing:.13em}.property-box{padding:12px;border:1px solid var(--line);border-radius:14px;background:#0d1a20}.property-box label{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:7px;font-weight:800}.property-box select{width:100%;border:1px solid #29414d;background:#0a151b;color:white;border-radius:10px;padding:10px;font:inherit;font-size:12px;outline:none}.nav{display:grid;gap:5px}.nav a{display:block;color:#9eb0ba;text-decoration:none;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:650}.nav a:hover{background:#10232b;color:white}.nav a.active{background:#123238;color:#8cf6e8}.sidebar-foot{margin-top:auto;padding:12px;color:#66808d;font-size:10px;line-height:1.5;border-top:1px solid var(--line)}.main{min-width:0;padding:34px}.shell{max-width:1500px;margin:0 auto}.top{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:24px}.eyebrow{color:var(--teal);font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.14em;margin-bottom:8px}.top h1{font-size:42px;line-height:1.05;letter-spacing:-.045em;margin:0}.top p{color:var(--muted);margin:10px 0 0;font-size:14px}.status{display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:#0d1a20;border-radius:999px;padding:10px 13px;font-size:12px;font-weight:800;white-space:nowrap}.dot{width:9px;height:9px;border-radius:50%;background:var(--amber)}.status.ok .dot{background:var(--green)}.status.bad .dot{background:var(--red)}.alert{display:none;border:1px solid rgba(251,113,133,.45);background:rgba(127,29,29,.18);color:#fecdd3;border-radius:14px;padding:14px 16px;margin-bottom:18px;font-size:13px;line-height:1.5}.alert.show{display:block}.hero{border:1px solid var(--line);background:linear-gradient(135deg,#0f2027,#0b171d);border-radius:20px;padding:20px 22px;margin-bottom:18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center}.hero h2{font-size:24px;margin:0 0 6px;letter-spacing:-.03em}.hero p{margin:0;color:var(--muted);font-size:13px}.hero-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#89f3e7;font-size:12px;background:#0a171b;border:1px solid #24434a;border-radius:10px;padding:10px 12px}.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:18px}.card{grid-column:span 4;min-width:0;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel2),var(--panel));border-radius:18px;padding:18px;box-shadow:0 20px 55px rgba(0,0,0,.16)}.card.wide{grid-column:span 6}.card.full{grid-column:1/-1}.card[data-tone="teal"]{border-top:3px solid var(--teal)}.card[data-tone="purple"]{border-top:3px solid var(--purple)}.card[data-tone="amber"]{border-top:3px solid var(--amber)}.card[data-tone="blue"]{border-top:3px solid var(--blue)}.card[data-tone="green"]{border-top:3px solid var(--green)}.card h3{margin:0 0 12px;font-size:16px;letter-spacing:-.02em}.rows{display:grid}.row{display:grid;grid-template-columns:minmax(110px,38%) minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid rgba(255,255,255,.055);align-items:start}.row:first-child{border-top:0}.label{font-size:10px;color:#78909c;text-transform:uppercase;letter-spacing:.09em;font-weight:850}.value{text-align:right;font-size:13px;font-weight:700;line-height:1.45;overflow-wrap:anywhere}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#78eadc}.empty{color:#718894;font-size:12px;padding:8px 0}.table-wrap{overflow:auto}.table{width:100%;min-width:720px;border-collapse:collapse}.table th,.table td{padding:11px 10px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;font-size:12px}.table th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#7e939e}.table td:last-child,.table th:last-child{text-align:right}.source-note{margin-top:18px;color:#5f7884;font-size:11px;text-align:right}.mobilebar{display:none}
+@media(max-width:1180px){.card{grid-column:span 6}}
+@media(max-width:820px){.app{grid-template-columns:1fr}.sidebar{display:none}.mobilebar{display:flex;padding:12px 16px;border-bottom:1px solid var(--line);background:#091419;position:sticky;top:0;z-index:10;align-items:center;justify-content:space-between}.mobilebar strong{font-size:14px}.main{padding:22px 16px}.top{flex-direction:column}.top h1{font-size:34px}.hero{grid-template-columns:1fr}.card,.card.wide{grid-column:1/-1}.row{grid-template-columns:1fr;gap:4px}.value{text-align:left}}
 </style>
 </head>
 <body>
-<main class="main">
-  <div class="page-shell">
-    <div class="page-head">
-      <div><h1>Anagrafica Immobile</h1><p>Fonte operativa: Airtable 2EMME Asset Master 2026.</p></div>
-      <div id="syncPill" class="sync-pill"><span class="sync-dot"></span><span id="syncText">Connessione Airtable...</span></div>
-    </div>
-    <div id="notice" class="notice"></div>
+<div class="mobilebar"><strong>2M MultiProperty</strong><span id="mobileStatus">Airtable…</span></div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><strong>2M</strong><span>MultiProperty Control</span></div>
+    <div class="property-box"><label for="propertySelect">Immobile</label><select id="propertySelect"><option>Caricamento da Airtable…</option></select></div>
+    <nav class="nav">
+      <a href="index.html">Overview</a>
+      <a href="anagrafica.html" class="active">Anagrafica</a>
+      <a href="asset.html">Asset</a>
+      <a href="prenotazioni.html">Prenotazioni</a>
+      <a href="manutenzione.html">Manutenzione</a>
+      <a href="audit.html">Audit</a>
+      <a href="finanze.html">Finanze</a>
+      <a href="fatture.html">Fatture & Ricevute</a>
+      <a href="sicurezza.html">Sicurezza</a>
+    </nav>
+    <div class="sidebar-foot">Runtime canonico 2M.<br>Dati operativi letti da Airtable. Nessun database locale di fallback.</div>
+  </aside>
 
-    <section class="grid-3">
-      <article class="card teal"><div class="card-head"><i data-lucide="building-2"></i><h2>Dati immobile & Catasto</h2></div><div class="rows">
-        <div class="row"><div class="label">Immobile</div><div id="propertyName" class="value">Caricamento...</div></div>
-        <div class="row"><div class="label">Indirizzo</div><div id="propertyAddress" class="value">—</div></div>
-        <div class="row"><div class="label">Piano</div><div id="propertyFloor" class="value">—</div></div>
-        <div class="row"><div class="label">Superficie</div><div id="propertySurface" class="value">—</div></div>
-        <div class="row"><div class="label">Foglio</div><div id="catFoglio" class="value mono">—</div></div>
-        <div class="row"><div class="label">Particella</div><div id="catParticella" class="value mono">—</div></div>
-        <div class="row"><div class="label">Subalterno</div><div id="catSub" class="value mono">—</div></div>
-        <div class="row"><div class="label">Categoria / classe</div><div id="catCategoria" class="value">—</div></div>
-        <div class="row"><div class="label">Rendita catastale</div><div id="catRendita" class="value">—</div></div>
+  <main class="main"><div class="shell">
+    <header class="top">
+      <div><div class="eyebrow">2M MultiProperty</div><h1>Anagrafica immobile</h1><p>Fonte live: Airtable · 2EMME Asset Master 2026</p></div>
+      <div id="status" class="status"><span class="dot"></span><span id="statusText">Verifica Airtable…</span></div>
+    </header>
+    <div id="alert" class="alert"></div>
+
+    <section class="hero"><div><h2 id="heroName">Caricamento…</h2><p id="heroAddress">Connessione alla fonte dati</p></div><div id="heroCode" class="hero-code">—</div></section>
+
+    <section class="grid">
+      <article class="card" data-tone="teal"><h3>Immobile e Catasto</h3><div class="rows">
+        <div class="row"><div class="label">Piano</div><div id="floor" class="value">—</div></div>
+        <div class="row"><div class="label">Superficie</div><div id="surface" class="value">—</div></div>
+        <div class="row"><div class="label">Foglio</div><div id="foglio" class="value mono">—</div></div>
+        <div class="row"><div class="label">Particella</div><div id="particella" class="value mono">—</div></div>
+        <div class="row"><div class="label">Subalterno</div><div id="subalterno" class="value mono">—</div></div>
+        <div class="row"><div class="label">Categoria / classe</div><div id="categoria" class="value">—</div></div>
+        <div class="row"><div class="label">Rendita</div><div id="rendita" class="value">—</div></div>
       </div></article>
 
-      <article class="card purple"><div class="card-head"><i data-lucide="file-check-2"></i><h2>Regime, titoli & APE</h2></div><div class="rows">
-        <div class="row"><div class="label">Regime gestionale</div><div id="propertyRegime" class="value">—</div></div>
-        <div class="row"><div class="label">Proprietà / titolo</div><div id="propertyTitle" class="value">—</div></div>
-        <div class="row"><div class="label">Gestore</div><div id="propertyManager" class="value">—</div></div>
-        <div class="row"><div class="label">CIN</div><div id="authCin" class="value mono">—</div></div>
-        <div class="row"><div class="label">CIR</div><div id="authCir" class="value mono">—</div></div>
-        <div class="row"><div class="label">Codice struttura</div><div id="authStructure" class="value mono">—</div></div>
+      <article class="card" data-tone="purple"><h3>Regime e titoli</h3><div class="rows">
+        <div class="row"><div class="label">Stato</div><div id="propertyStatus" class="value">—</div></div>
+        <div class="row"><div class="label">Regime</div><div id="regime" class="value">—</div></div>
+        <div class="row"><div class="label">Proprietà / titolo</div><div id="title" class="value">—</div></div>
+        <div class="row"><div class="label">Gestore</div><div id="manager" class="value">—</div></div>
+        <div class="row"><div class="label">Accesso</div><div id="access" class="value">—</div></div>
+      </div></article>
+
+      <article class="card" data-tone="amber"><h3>Autorizzazioni e APE</h3><div class="rows">
+        <div class="row"><div class="label">CIN</div><div id="cin" class="value mono">—</div></div>
+        <div class="row"><div class="label">CIR</div><div id="cir" class="value mono">—</div></div>
+        <div class="row"><div class="label">Codice struttura</div><div id="structureCode" class="value mono">—</div></div>
         <div class="row"><div class="label">Classe APE</div><div id="apeClass" class="value">—</div></div>
-        <div class="row"><div class="label">EPgl,nren</div><div id="apeEpgl" class="value">—</div></div>
+        <div class="row"><div class="label">EPgl,nren</div><div id="epgl" class="value">—</div></div>
         <div class="row"><div class="label">Scadenza APE</div><div id="apeExpiry" class="value">—</div></div>
       </div></article>
 
-      <article class="card amber"><div class="card-head"><i data-lucide="plug-zap"></i><h2>Reti & Utenze</h2></div><div id="utilitiesRows" class="rows"><div class="empty">Caricamento utenze...</div></div></article>
+      <article class="card wide" data-tone="blue"><h3>Reti e utenze</h3><div id="utilities" class="rows"><div class="empty">Caricamento…</div></div></article>
+      <article class="card wide" data-tone="green"><h3>Amministrazione e contatti</h3><div id="contacts" class="rows"><div class="empty">Caricamento…</div></div></article>
+      <article class="card wide" data-tone="green"><h3>Coperture assicurative</h3><div id="insurance" class="rows"><div class="empty">Caricamento…</div></div></article>
+      <article class="card wide" data-tone="blue"><h3>Gestione condominiale</h3><div class="table-wrap"><table class="table"><thead><tr><th>Esercizio</th><th>Tipo</th><th>Dovuto</th><th>Pagato</th><th>Residuo</th></tr></thead><tbody id="condo"><tr><td colspan="5" class="empty">Caricamento…</td></tr></tbody></table></div></article>
     </section>
-
-    <section class="grid-2">
-      <article class="card blue"><div class="card-head"><i data-lucide="landmark"></i><h2>Amministrazione & Condominio</h2></div>
-        <div id="contactRows" class="rows"><div class="empty">Caricamento contatti...</div></div>
-        <div class="table-wrap"><table class="table"><thead><tr><th>Esercizio</th><th>Tipo</th><th>Dovuto</th><th>Versato</th><th>Residuo</th></tr></thead><tbody id="condoBody"><tr><td colspan="5" class="empty">Caricamento...</td></tr></tbody></table></div>
-      </article>
-      <article class="card green"><div class="card-head"><i data-lucide="shield-check"></i><h2>Coperture assicurative</h2></div><div id="insuranceRows" class="rows"><div class="empty">Caricamento polizze...</div></div></article>
-    </section>
-  </div>
-</main>
+    <div id="sourceNote" class="source-note"></div>
+  </div></main>
+</div>
 <script>
-const el=id=>document.getElementById(id);const show=(id,v)=>{const x=el(id);if(x)x.textContent=(v===null||v===undefined||v==='')?'—':String(v)};
-const euro=v=>v===null||v===undefined||v===''?'—':new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(Number(v));
-const date=v=>{if(!v)return'—';const d=new Date(v);return isNaN(d)?String(v):d.toLocaleDateString('it-IT')};
-const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-function activeProperty(){return localStorage.getItem('2m_active_property_id')||'MASOTTO4_39'}
-function setSync(state,text){const p=el('syncPill');p.classList.remove('ok','error');if(state)p.classList.add(state);el('syncText').textContent=text}
-function row(label,value,mono=false){return `<div class="row"><div class="label">${esc(label)}</div><div class="value${mono?' mono':''}">${esc(value||'—')}</div></div>`}
-function renderUtilities(items){const box=el('utilitiesRows');if(!items?.length){box.innerHTML='<div class="empty">Nessuna utenza collegata in Airtable.</div>';return}box.innerHTML=items.map(u=>{const codeLabel=(u.type||'').toLowerCase()==='luce'?'POD':(u.type||'').toLowerCase()==='gas'?'PDR':'Codice';return row(u.type||'Utenza',u.provider||'—')+row(codeLabel,u.code||'—',true)+(u.supply_code?row('Codice fornitura',u.supply_code,true):'')+(u.ssid?row('SSID / rete',u.ssid,true):'')}).join('')}
-function renderContacts(items){const box=el('contactRows');if(!items?.length){box.innerHTML='<div class="empty">Nessun contatto collegato in Airtable.</div>';return}box.innerHTML=items.map(c=>row(c.type||'Contatto',c.organization||c.person||'—')+(c.email?row('Email',c.email):'')+(c.phone?row('Telefono',c.phone):'')).join('')}
-function renderInsurance(items){const box=el('insuranceRows');if(!items?.length){box.innerHTML='<div class="empty">Nessuna polizza collegata in Airtable.</div>';return}box.innerHTML=items.map(i=>row('Compagnia',i.company||'—')+row('Prodotto',i.product||'—')+row('Polizza',i.id||'—',true)+row('Stato',i.status||'—')+row('Scadenza',date(i.expiry))+row('Premio',euro(i.premium))).join('')}
-function renderCondo(items){const body=el('condoBody');if(!items?.length){body.innerHTML='<tr><td colspan="5" class="empty">Nessun esercizio condominiale collegato in Airtable.</td></tr>';return}body.innerHTML=items.map(c=>`<tr><td>${esc(c.exercise||'—')}</td><td>${esc(c.type||'—')}</td><td>${esc(euro(c.due))}</td><td>${esc(euro(c.paid))}</td><td>${esc(euro(c.residual))}</td></tr>`).join('')}
-async function loadAirtable(){
-  const property=activeProperty();
-  if(property==='ALL_2EMME'){setSync('error','Seleziona un singolo alloggio');el('notice').className='notice show';el('notice').textContent='L’anagrafica richiede un singolo immobile. Seleziona un alloggio dalla barra laterale.';return}
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const text=(id,v)=>{$(id).textContent=(v===null||v===undefined||v==='')?'—':String(v)};
+const euro=v=>(v===null||v===undefined||v==='')?'—':new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(Number(v));
+const date=v=>{if(!v)return'—';const d=new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleDateString('it-IT')};
+const row=(label,value,mono=false)=>`<div class="row"><div class="label">${esc(label)}</div><div class="value${mono?' mono':''}">${esc(value||'—')}</div></div>`;
+function setStatus(kind,msg){$('status').className='status '+(kind||'');$('statusText').textContent=msg;$('mobileStatus').textContent=msg}
+function fail(msg){setStatus('bad','Airtable non disponibile');$('alert').className='alert show';$('alert').textContent=msg}
+async function api(q){const r=await fetch('/api/2m-master?'+q,{cache:'no-store'});let d={};try{d=await r.json()}catch{}if(!r.ok||!d.ok)throw new Error(d.error||`HTTP ${r.status}`);return d}
+function cleanName(name){return String(name||'').replace(/\s+-\s+.*$/,'')}
+async function boot(){
   try{
-    const res=await fetch(`/api/airtable-master?property=${encodeURIComponent(property)}`,{cache:'no-store'});const data=await res.json();
-    if(!res.ok||!data.ok)throw new Error(data.error||`HTTP ${res.status}`);
-    const p=data.property||{},c=data.catasto||{},a=(data.authorizations||[])[0]||{};
-    show('propertyName',p.name);show('propertyAddress',p.address);show('propertyFloor',p.floor);show('propertySurface',p.surface);show('propertyRegime',p.regime);show('propertyTitle',p.title);show('propertyManager',p.manager);
-    show('catFoglio',c.foglio);show('catParticella',c.particella);show('catSub',c.subalterno);show('catCategoria',c.categoria);show('catRendita',euro(c.rendita));show('apeClass',c.ape_class);show('apeEpgl',c.epgl!==null&&c.epgl!==undefined?`${c.epgl} kWh/m² anno`:'—');show('apeExpiry',date(c.ape_expiry));
-    show('authCin',a.cin);show('authCir',a.cir);show('authStructure',a.structure_code);renderUtilities(data.utilities);renderContacts(data.contacts);renderInsurance(data.insurance);renderCondo(data.condo);
-    setSync('ok',`Airtable collegato · ${new Date(data.synced_at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}`);
-  }catch(err){
-    setSync('error','Airtable non collegato');const n=el('notice');n.className='notice show';n.textContent=`La pagina non sta usando dati locali di fallback. Errore collegamento Airtable: ${err.message}.`;
-    ['propertyName','propertyAddress','propertyFloor','propertySurface','propertyRegime','propertyTitle','propertyManager','catFoglio','catParticella','catSub','catCategoria','catRendita','apeClass','apeEpgl','apeExpiry','authCin','authCir','authStructure'].forEach(id=>show(id,'—'));
-    el('utilitiesRows').innerHTML='<div class="empty">Dati non mostrati: Airtable non disponibile.</div>';el('contactRows').innerHTML='<div class="empty">Dati non mostrati: Airtable non disponibile.</div>';el('insuranceRows').innerHTML='<div class="empty">Dati non mostrati: Airtable non disponibile.</div>';el('condoBody').innerHTML='<tr><td colspan="5" class="empty">Dati non mostrati: Airtable non disponibile.</td></tr>';
-  }
+    const health=await api('action=health');
+    if(!health.configured)throw new Error('AIRTABLE_NOT_CONFIGURED');
+    const list=await api('action=properties');
+    const select=$('propertySelect');select.innerHTML='';
+    for(const p of list.properties){const o=document.createElement('option');o.value=p.code;o.textContent=cleanName(p.name);select.appendChild(o)}
+    const params=new URLSearchParams(location.search);const requested=params.get('property');const saved=localStorage.getItem('2m_active_property_code');
+    const codes=list.properties.map(p=>p.code);let code=codes.includes(requested)?requested:(codes.includes(saved)?saved:codes[0]);
+    if(!code)throw new Error('NESSUN_IMMOBILE_IN_AIRTABLE');
+    select.value=code;localStorage.setItem('2m_active_property_code',code);
+    select.onchange=()=>{localStorage.setItem('2m_active_property_code',select.value);location.href='anagrafica.html?property='+encodeURIComponent(select.value)};
+    await loadProperty(code);
+  }catch(e){fail('Connessione 2M → Airtable fallita: '+(e.message||e))}
 }
-document.addEventListener('DOMContentLoaded',async()=>{try{if(window.ensureMasterDB)await window.ensureMasterDB(false)}catch(e){}await loadAirtable();if(window.lucide)lucide.createIcons()});
+async function loadProperty(code){
+  const d=await api('property='+encodeURIComponent(code));const p=d.property||{},c=d.catasto||{},a=(d.authorizations||[])[0]||{};
+  text('heroName',cleanName(p.name));text('heroAddress',p.address);text('heroCode',p.code);text('floor',p.floor);text('surface',p.surface);text('propertyStatus',p.status);text('regime',p.regime);text('title',p.title);text('manager',p.manager);text('access',p.access);
+  text('foglio',c.foglio);text('particella',c.particella);text('subalterno',c.subalterno);text('categoria',c.categoria);text('rendita',c.rendita==null?'—':euro(c.rendita));text('cin',a.cin);text('cir',a.cir);text('structureCode',a.structure_code);text('apeClass',c.ape_class);text('epgl',c.epgl==null?'—':c.epgl);text('apeExpiry',date(c.ape_expiry));
+  $('utilities').innerHTML=d.utilities?.length?d.utilities.map(u=>{const t=String(u.type||'Utenza');const tl=t.toLowerCase();const label=tl.includes('luce')?'POD':tl.includes('gas')?'PDR':'Codice';return row(t,u.provider)+row(label,u.code,true)+(u.supply_code?row('Codice fornitura',u.supply_code,true):'')+(u.ssid?row('SSID',u.ssid,true):'')+(u.client_code?row('Codice cliente',u.client_code,true):'')}).join(''):'<div class="empty">Nessuna utenza collegata in Airtable.</div>';
+  $('contacts').innerHTML=d.contacts?.length?d.contacts.map(x=>row(x.type||'Contatto',x.organization||x.person)+(x.email?row('Email',x.email):'')+(x.phone?row('Telefono',x.phone):'')).join(''):'<div class="empty">Nessun contatto collegato in Airtable.</div>';
+  $('insurance').innerHTML=d.insurance?.length?d.insurance.map(x=>row('Compagnia',x.company)+row('Prodotto',x.product)+row('Polizza',x.id,true)+row('Stato',x.status)+row('Scadenza',date(x.expiry))+(x.premium!=null?row('Premio',euro(x.premium)):'')).join(''):'<div class="empty">Nessuna polizza collegata in Airtable.</div>';
+  $('condo').innerHTML=d.condo?.length?d.condo.map(x=>`<tr><td>${esc(x.exercise||'—')}</td><td>${esc(x.type||'—')}</td><td>${esc(euro(x.due))}</td><td>${esc(euro(x.paid))}</td><td>${esc(euro(x.residual))}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">Nessuna gestione condominiale collegata.</td></tr>';
+  setStatus('ok','Airtable collegato');$('alert').className='alert';$('sourceNote').textContent='Sincronizzato da Airtable: '+new Date(d.synced_at).toLocaleString('it-IT');
+}
+boot();
 </script>
 </body>
 </html>
