@@ -7,6 +7,7 @@
     ["audit.html", "Audit", "clipboard-check"],
     ["manutenzione.html", "Manutenzione", "wrench"],
     ["prenotazioni.html", "Prenotazioni", "calendar"],
+    ["fatture.html", "Fatture & Ricevute", "receipt-text"],
     ["finanze.html", "Finanze", "pie-chart"],
     ["conto.html", "Conto", "wallet"],
     ["consuntivo_25.html", "Consuntivo 2025", "file-text"],
