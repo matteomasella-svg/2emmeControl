@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3MATRIX Compliance Scan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#080c10;--panel:#0f151a;--panel2:#131b24;--border:rgba(255,255,255,.10);--brand:#004D54;--accent:#2dd4bf;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--review:#a78bfa;--muted:#94a3b8}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;overflow:auto!important;height:auto!important}
+    .page{padding:2rem;background:radial-gradient(circle at 80% 0%,rgba(0,77,84,.32),transparent 38%),var(--bg);min-height:100vh}
+    .ms-sidebar{position:fixed;inset:0 auto 0 0;width:260px;background:rgba(15,23,42,.97);border-right:1px solid var(--border);padding:20px;z-index:50;overflow-y:auto}.ms-main{margin-left:260px;min-height:100vh;display:flex;flex-direction:column}.ms-nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#94a3b8;font-weight:600;text-decoration:none}.ms-nav a:hover{background:rgba(255,255,255,.05);color:#fff}.ms-nav a.active{background:var(--brand);color:var(--accent);border-left:3px solid var(--accent)}.ms-chip{font:600 10px monospace;color:var(--accent);background:rgba(45,212,191,.10);border:1px solid rgba(45,212,191,.25);padding:2px 8px;border-radius:999px;display:inline-block}
+    @media(max-width:900px){.ms-sidebar{transform:translateX(-105%);transition:.2s}.ms-sidebar.open{transform:translateX(0)}.ms-main{margin-left:0}.ms-topbar{position:sticky;top:0;z-index:40;backdrop-filter:blur(10px);background:rgba(11,18,32,.84);border-bottom:1px solid var(--border)}.page{padding:1rem}}
+    .panel{background:rgba(15,21,26,.88);border:1px solid var(--border);border-radius:18px}.metric{padding:16px 18px}.metric .k{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800}.metric .v{font-size:1.7rem;font-weight:800;margin-top:4px}.toolbar{display:flex;flex-wrap:wrap;gap:10px}.btn{border:1px solid var(--border);border-radius:11px;padding:11px 15px;font-weight:800;font-size:.82rem;display:inline-flex;align-items:center;gap:8px;cursor:pointer;min-height:44px}.btn-primary{background:rgba(45,212,191,.16);color:#99f6e4;border-color:rgba(45,212,191,.45)}.btn-secondary{background:rgba(167,139,250,.12);color:#ddd6fe;border-color:rgba(167,139,250,.38)}.btn:disabled{opacity:.5;cursor:not-allowed}
+    .scanner{position:relative;min-height:310px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at center,rgba(45,212,191,.08),transparent 55%),repeating-radial-gradient(circle at center,transparent 0,transparent 48px,rgba(148,163,184,.08) 49px,transparent 50px)}
+    .scanner:before,.scanner:after{content:"";position:absolute;background:rgba(148,163,184,.09)}.scanner:before{left:50%;top:0;bottom:0;width:1px}.scanner:after{top:50%;left:0;right:0;height:1px}.laser{position:absolute;left:4%;right:4%;height:2px;top:8%;opacity:0;background:linear-gradient(90deg,transparent,var(--accent),#fff,var(--accent),transparent);box-shadow:0 0 10px var(--accent),0 0 28px rgba(45,212,191,.65);z-index:3}.scanner.scanning .laser{opacity:1;animation:sweep 1.8s ease-in-out infinite}.scan-core{position:relative;z-index:4;width:190px;height:190px;border-radius:50%;border:1px solid rgba(45,212,191,.38);background:rgba(8,12,16,.86);display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;box-shadow:inset 0 0 30px rgba(45,212,191,.05)}.scan-core:before,.scan-core:after{content:"";position:absolute;border-radius:50%;border:1px solid rgba(45,212,191,.16)}.scan-core:before{inset:-25px}.scan-core:after{inset:-50px}.scan-status{font-size:1.05rem;font-weight:800}.scan-score{font-size:2.9rem;font-weight:800;line-height:1;margin:8px 0}.scan-label{font-size:.69rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:800}@keyframes sweep{0%{top:7%}50%{top:92%}100%{top:7%}}@media(prefers-reduced-motion:reduce){.scanner.scanning .laser{animation:none;top:50%;opacity:1}}
+    .status-COMPLIANT{color:var(--ok)}.status-WARNING{color:var(--warn)}.status-BLOCKED,.status-NON_COMPLIANT{color:var(--bad)}.status-REVIEW,.status-REVIEW_LEGAL{color:var(--review)}
+    .area-grid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:12px}@media(min-width:760px){.area-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(min-width:1200px){.area-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}.area-card{padding:16px;min-width:0}.area-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.area-title{font-weight:800}.pill{font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:4px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}.rule{padding:13px 0;border-top:1px solid rgba(255,255,255,.07)}.rule:first-of-type{margin-top:10px}.rule-title{font-size:.84rem;font-weight:800}.rule-meta{font-size:.69rem;color:var(--muted);margin-top:3px}.rule-observed{font-size:.75rem;margin-top:7px;color:#cbd5e1}.action-list{display:flex;flex-direction:column;gap:10px}.action{padding:13px 14px;border-left:3px solid var(--warn);background:rgba(255,255,255,.025);border-radius:8px;font-size:.78rem}.empty{color:var(--muted);font-size:.82rem;padding:18px}.watch-box{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.watch-state{font-size:.78rem;color:#cbd5e1}.error{padding:14px;border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.08);border-radius:12px;color:#fecaca;font-size:.82rem}.spin{animation:rot 1s linear infinite}@keyframes rot{to{transform:rotate(360deg)}}
+  </style>
+  <script src="masotto_db.js"></script>
+  <script src="ms_core.js"></script>
+</head>
+<body>
+  <main class="page">
+    <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-5 mb-6">
+      <div>
+        <div class="text-[11px] uppercase tracking-[.16em] text-teal-300 font-extrabold mb-2">3MATRIX · Compliance Intelligence</div>
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Compliance Scan</h1>
+        <p class="text-sm text-slate-400 mt-2 max-w-3xl">Analisi normativa ed evidenziale dell’attività. Il raggio visualizza la scansione; l’esito deriva da regole atomiche, dati Airtable ed evidenze verificabili.</p>
+      </div>
+      <div class="toolbar">
+        <button id="scanBtn" class="btn btn-primary" type="button"><i data-lucide="scan-line" class="w-4 h-4"></i> Scansiona attività</button>
+        <button id="watchBtn" class="btn btn-secondary" type="button"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Aggiorna normativa</button>
+      </div>
+    </div>
+
+    <div id="errorBox" class="error hidden mb-4"></div>
+
+    <section class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4" aria-label="Sintesi compliance">
+      <div class="panel metric"><div class="k">Score</div><div id="mScore" class="v">--</div></div>
+      <div class="panel metric"><div class="k">Block</div><div id="mBlock" class="v status-BLOCKED">--</div></div>
+      <div class="panel metric"><div class="k">Critiche</div><div id="mCritical" class="v status-NON_COMPLIANT">--</div></div>
+      <div class="panel metric"><div class="k">Warning</div><div id="mWarning" class="v status-WARNING">--</div></div>
+      <div class="panel metric col-span-2 lg:col-span-1"><div class="k">Review</div><div id="mReview" class="v status-REVIEW">--</div></div>
+    </section>
+
+    <section id="scanner" class="panel scanner mb-4" aria-live="polite">
+      <div class="laser" aria-hidden="true"></div>
+      <div class="scan-core">
+        <div>
+          <div class="scan-label">Esito globale</div>
+          <div id="scanScore" class="scan-score">--</div>
+          <div id="scanStatus" class="scan-status text-slate-300">IN ATTESA</div>
+          <div id="scanProperty" class="text-[11px] text-slate-500 mt-2">Seleziona un alloggio</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel p-4 md:p-5 mb-4">
+      <div class="watch-box">
+        <div>
+          <div class="text-sm font-extrabold">Compliance Watch normativo</div>
+          <div id="watchState" class="watch-state mt-1">Fonti istituzionali registrate · controllo automatico giornaliero · nuove regole in revisione prima dell’attivazione.</div>
+        </div>
+        <div class="flex gap-2 items-center">
+          <span class="pill status-REVIEW"><span id="pendingCount">--</span> novità da revisionare</span>
+          <span id="versionBadge" class="pill text-slate-400">versione --</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid xl:grid-cols-[1fr_360px] gap-4 items-start">
+      <section>
+        <div class="flex items-end justify-between mb-3 gap-3">
+          <div><h2 class="text-lg font-extrabold">Matrice dei controlli</h2><p id="ruleCount" class="text-xs text-slate-500 mt-1">-- regole applicabili</p></div>
+        </div>
+        <div id="areaGrid" class="area-grid"></div>
+      </section>
+      <aside class="panel p-4 md:p-5 xl:sticky xl:top-4">
+        <div class="flex items-center gap-2 mb-3"><i data-lucide="list-checks" class="w-5 h-5 text-amber-300"></i><h2 class="text-lg font-extrabold">Azioni da intraprendere</h2></div>
+        <div id="actions" class="action-list"><div class="empty">Esegui la scansione per generare le azioni correttive.</div></div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const $=id=>document.getElementById(id);
+    const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const activeProperty=()=>localStorage.getItem('2m_active_property_id')||'MASOTTO4_39';
+    function cssStatus(s){return String(s||'').replaceAll(' ','_').replaceAll('-','_').toUpperCase()}
+    function showError(msg){$('errorBox').textContent=msg;$('errorBox').classList.remove('hidden')}
+    function clearError(){$('errorBox').classList.add('hidden');$('errorBox').textContent=''}
+    function setBusy(on,label){$('scanner').classList.toggle('scanning',on);$('scanBtn').disabled=on;$('watchBtn').disabled=on;if(label)$('scanStatus').textContent=label}
+    function render(data){
+      const counts=data.counts||{}; $('mScore').textContent=`${data.score??0}%`; $('mBlock').textContent=counts.block??0; $('mCritical').textContent=counts.critical??0; $('mWarning').textContent=counts.warning??0; $('mReview').textContent=counts.review??0;
+      $('scanScore').textContent=`${data.score??0}`; const st=data.overall_status||'REVIEW LEGAL'; $('scanStatus').textContent=st; $('scanStatus').className=`scan-status status-${cssStatus(st)}`; $('scanProperty').textContent=data.property?.name||data.property?.property_key||'';
+      $('pendingCount').textContent=data.pending_updates??0; $('versionBadge').textContent=`versione ${data.normative_version||'--'}`; $('ruleCount').textContent=`${data.rule_count||0} regole applicabili`;
+      const groups={}; (data.outcomes||[]).forEach(r=>{(groups[r.area||'Altro']??=[]).push(r)}); const order=Object.keys(groups).sort();
+      $('areaGrid').innerHTML=order.map(area=>{
+        const rows=groups[area]; const bad=rows.find(r=>r.result==='BLOCKED')||rows.find(r=>r.result==='NON_COMPLIANT')||rows.find(r=>r.result==='WARNING')||rows.find(r=>r.result==='REVIEW'); const areaStatus=bad?.result||'COMPLIANT';
+        return `<article class="panel area-card"><div class="area-head"><div><div class="area-title">${esc(area)}</div><div class="text-[11px] text-slate-500 mt-1">${rows.length} controlli</div></div><span class="pill status-${cssStatus(areaStatus)}">${esc(areaStatus.replace('_',' '))}</span></div>${rows.map(r=>`<div class="rule"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="rule-title">${esc(r.id)} · ${esc(r.title)}</div><div class="rule-meta">${esc(r.severity)} · ${esc(r.jurisdiction||'')}</div></div><span class="pill status-${cssStatus(r.result)}">${esc(r.result.replace('_',' '))}</span></div><div class="rule-observed"><strong>Evidenza:</strong> ${esc(r.observed||'--')}</div><div class="rule-observed"><strong>Valutazione:</strong> ${esc(r.rationale||'--')}</div></div>`).join('')}</article>`
+      }).join('')||'<div class="panel empty">Nessuna regola applicabile trovata.</div>';
+      const pending=(data.outcomes||[]).filter(r=>r.result!=='COMPLIANT'); $('actions').innerHTML=pending.length?pending.map(r=>`<div class="action"><div class="font-extrabold mb-1">${esc(r.id)} · ${esc(r.area)}</div><div>${esc(r.corrective_action||r.rationale||'Verificare la regola.')}</div><div class="text-[10px] text-slate-500 mt-2">${esc(r.source||'')} ${r.reference?'· '+esc(r.reference):''}</div></div>`).join(''):'<div class="empty status-COMPLIANT">Nessuna azione correttiva aperta.</div>';
+      try{if(window.lucide)window.lucide.createIcons()}catch(e){}
+    }
+    async function load(save=false){
+      clearError(); const p=activeProperty(); if(p==='ALL_2EMME'){showError('Il Compliance Scan richiede un singolo immobile. Selezionalo dal menu laterale.');return}
+      setBusy(save,save?'SCANSIONE IN CORSO':'CARICAMENTO');
+      try{const res=await fetch(`/api/compliance?property=${encodeURIComponent(p)}`,save?{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({property:p,origin:'MANUALE'})}:{cache:'no-store'});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||`HTTP ${res.status}`);render(data);if(save)$('watchState').textContent=`Scansione salvata: ${data.scan_id}. Le evidenze mancanti restano in REVIEW, non vengono convertite in non conformità senza prova.`}catch(e){showError(`Compliance Scan: ${e.message||e}`)}finally{setBusy(false)}
+    }
+    async function watch(){
+      clearError(); setBusy(true,'RICERCA NORMATIVA'); const icon=$('watchBtn').querySelector('svg'); if(icon)icon.classList.add('spin'); $('watchState').textContent='Analisi delle fonti istituzionali e delle pagine correlate rilevanti in corso...';
+      try{const res=await fetch('/api/compliance-watch',{method:'POST'});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||`HTTP ${res.status}`);$('watchState').textContent=`Controllo completato: ${data.sources_scanned} fonti, ${data.changes_detected} variazioni nuove registrate. Le variazioni non diventano ACTIVE senza revisione.`;await load(false)}catch(e){showError(`Compliance Watch: ${e.message||e}`);$('watchState').textContent='Controllo normativo non completato.'}finally{if(icon)icon.classList.remove('spin');setBusy(false)}
+    }
+    $('scanBtn').addEventListener('click',()=>load(true)); $('watchBtn').addEventListener('click',watch);
+    document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>load(false),120);try{if(window.lucide)window.lucide.createIcons()}catch(e){}});
+  </script>
+</body>
+</html>
