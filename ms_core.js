@@ -5,6 +5,7 @@
     ["anagrafica.html", "Anagrafica", "id-card"],
     ["asset.html", "Asset", "boxes"],
     ["audit.html", "Audit", "clipboard-check"],
+    ["compliance.html", "Compliance", "scan-line"],
     ["manutenzione.html", "Manutenzione", "wrench"],
     ["prenotazioni.html", "Prenotazioni", "calendar"],
     ["fatture.html", "Fatture & Ricevute", "receipt-text"],
