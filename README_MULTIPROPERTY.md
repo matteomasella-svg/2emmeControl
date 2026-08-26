@@ -1,29 +1,36 @@
-# 2M MultiProperty
+# 2M Controller · MultiProperty
 
-Questa è la piattaforma multiproperty 2M. Non è il progetto Masotto.
+2M Controller è la piattaforma operativa multiproperty di 2EMME. Masotto Terrace View è uno dei cinque immobili gestiti e non è il namespace del sistema.
 
-## Regola architetturale canonica
+## Architettura canonica
 
-- **2M MultiProperty** è il nome funzionale della piattaforma attiva.
-- **Masotto Terrace View** è uno dei singoli immobili gestiti dalla piattaforma, al pari di Heritage, Nest, Suite e Studio.
-- Il codice, la UI e la documentazione attiva non devono usare "Masotto" come namespace generale della piattaforma.
-- I file storici con prefisso `masotto_` sono da considerare **legacy del prototipo single-property** e non fonte canonica della nuova architettura.
-- Le nuove pagine non devono dipendere da `masotto_db.js`, `masotto_database.js`, `masotto_complete_database.json` o dalle vecchie chiavi `masotto_*` di localStorage.
+Le pagine operative condividono ora un unico runtime:
+
+- `2m_app.js`: selezione immobile, navigazione, rendering dei moduli e operazioni CRUD;
+- `2m_app.css`: sistema grafico responsive unico;
+- `netlify/functions/2m-master.mts`: anagrafica, catasto/APE, utenze, contatti, autorizzazioni, assicurazioni e condominio;
+- `netlify/functions/2m-controller.mts`: asset, manutenzioni, preset, prenotazioni, finanze, compliance operativa, eventi 3MATRIX, bollette e rate condominiali;
+- `netlify/functions/airtable-finance.mts`: pagamenti ospiti e registro fatture/ricevute;
+- `compliance.html` e funzioni 3MATRIX Compliance: motore dedicato di scansione normativa.
 
 ## Fonte dati canonica
 
-La fonte operativa della piattaforma è Airtable `2EMME Asset Master 2026` e le sue tabelle collegate. Snapshot JSON e file legacy restano solo come archivio/scambio, non come sorgente primaria della UI.
+La fonte operativa è Airtable `2EMME Asset Master 2026` (`appVTOkf1uejZrWGZ`). Le pagine attive non caricano `masotto_db.js`, `MASOTTO_DB`, `MASOTTO_MULTIPROPERTY_DB`, `ms_core.js` o chiavi `localStorage` con prefisso `masotto_*`.
 
-## Alloggi
+I file `2mdb_v*.json` e `masotto_*` possono restare nel repository esclusivamente come archivio tecnico/storico e non sono sorgenti della UI attiva.
+
+## Moduli
+
+Overview, Anagrafica, Asset e Dotazioni, Prenotazioni, Manutenzione e Preset, Audit 3MATRIX, Finanze, Fatture e Ricevute, Sicurezza e Compliance Scan.
+
+## Regole runtime
+
+La selezione immobile usa esclusivamente `2m_active_property_code`. Non esiste fallback silenzioso a database locali. Gli errori Airtable sono mostrati nella UI. Le scritture di asset, manutenzioni ed eventi avvengono server-side; pagamenti e documenti usano il bridge finance. Le viste finanziarie evitano di sommare automaticamente fonti eterogenee potenzialmente sovrapposte.
+
+## Immobili canonici
 
 - `T29_9` — The NoLo Heritage
 - `B32_718` — The NoLo Nest
 - `B32_719` — The NoLo Suite
 - `CH1_715` — The NoLo Studio
 - `MASOTTO4_39` — Masotto Terrace View
-
-`MASOTTO4_39` è quindi soltanto l'identificatore di uno dei cinque immobili, non il nome del sistema.
-
-## Direzione di migrazione
-
-Le pagine attive vengono migrate verso un core `2m_*` multiproperty e verso endpoint server-side che leggono Airtable. Il vecchio adattatore basato su `window.MASOTTO_MULTIPROPERTY_DB`, `ms_core.js` e chiavi localStorage `masotto_*` è una compatibilità transitoria da eliminare, non l'architettura finale.
