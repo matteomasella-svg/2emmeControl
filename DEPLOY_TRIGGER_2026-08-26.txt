@@ -1,1 +1,2 @@
-Redeploy requested after AIRTABLE_TOKEN was configured in Netlify production environment.
+Force production redeploy after canonical 2M MultiProperty Airtable runtime and build verification script were added.
+Timestamp: 2026-08-26T01:36:00+02:00
