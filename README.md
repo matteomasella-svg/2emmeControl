@@ -1,72 +1,26 @@
-# 🚀 2M Apartments - Property Management System (PMS)
+# 2M Controller · MultiProperty
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![Status](https://img.shields.io/badge/status-Production_Ready-success.svg)
-![Tech Stack](https://img.shields.io/badge/tech-HTML5%20%7C%20TailwindCSS%20%7C%20Vanilla%20JS-teal.svg)
+Piattaforma operativa multiproperty 2EMME per controllo immobiliare, asset, manutenzione, prenotazioni, finanze, documenti, sicurezza e compliance.
 
-Un'infrastruttura gestionale **bespoke (su misura)** sviluppata per l'amministrazione avanzata, finanziaria e operativa di immobili a reddito per locazioni brevi turistiche. 
+## Architettura attiva
 
-Progettato originariamente per l'asset **"Masotto Terrace View"**, questo sistema supera i limiti dei tradizionali software commerciali offrendo un controllo totale su cash-flow, manutenzioni, fiscalità italiana e reportistica direzionale.
+La UI usa un runtime condiviso `2m_app.js` + `2m_app.css`. I dati operativi provengono da Airtable `2EMME Asset Master 2026` tramite funzioni Netlify server-side.
 
----
+Funzioni principali:
 
-## ✨ Caratteristiche Principali
+- `/api/2m-master` — anagrafica immobile, catasto/APE, utenze, contatti, autorizzazioni, assicurazioni e condominio;
+- `/api/2m-controller` — asset, manutenzioni, preset, prenotazioni, finanze, compliance operativa, eventi guasto/danno, bollette e rate;
+- `/api/airtable-finance` — pagamenti ospiti e registro fatture/ricevute;
+- motore 3MATRIX Compliance dedicato per la scansione normativa.
 
-Il PMS è diviso in moduli interconnessi che comunicano tra loro scambiandosi dati in tempo reale:
+## Regola canonica
 
-### 📊 1. CFO Dashboard (Cruscotto Direzionale)
-- **Live KPI:** Calcolo dinamico di Occupazione, ADR (Average Daily Rate) e RevPAR basato sugli effettivi giorni operativi.
-- **Capital Gain Tracker:** Algoritmo che calcola in tempo reale la rivalutazione dell'immobile (+4.5% annuo) sommando i costi dei CAPEX (lavori straordinari) per restituire la Plusvalenza Netta.
-- **AI Consumi Energetici:** Analisi intelligente dell'ultima bolletta caricata incrociata con l'inventario degli elettrodomestici (es. induzione, lavasciuga) con suggerimento automatico di apertura ticket (es. "pulizia filtri").
-- **Generatore Ricevute Turistiche:** Motore nativo di stampa PDF che emette ricevute conformi all'Art. 10 DPR 633/72 (fuori campo IVA), scorporando in automatico la Tassa di Soggiorno di Milano (con cap a 14 giorni) e applicando la firma autografa del locatore.
+Masotto Terrace View è uno dei cinque immobili gestiti, non il namespace della piattaforma. Le pagine operative non caricano più `masotto_db.js`, `MASOTTO_DB`, `MASOTTO_MULTIPROPERTY_DB`, `ms_core.js` o chiavi `masotto_*` di localStorage.
 
-### 💰 2. Modulo Finanze & P&L Fiscale
-- Separazione netta tra Contabilità di Cassa (saldo reale su conto corrente) e Contabilità di Competenza (P&L aziendale).
-- **Accantonamento Fiscale Automatico:** Calcola e isola la Cedolare Secca (21%) sull'imponibile di ogni singola prenotazione inserita.
-- **Report PDF Manageriale:** Generazione nativa di un bilancio consuntivo formattato per la presentazione al cliente, con analisi testuale generata in base all'andamento dell'esercizio (utile vs perdita da costi di startup).
+I file legacy possono restare nel repository esclusivamente come archivio tecnico e non sono fonte dati della UI attiva.
 
-### 🔧 3. Facility & Asset Management
-- **Ticketing System:** Gestione interventi di manutenzione ordinaria e straordinaria (costo lavoro vs materiali).
-- **Inventory & Scorte:** Tracciamento dell'usura degli attrezzi riutilizzabili (pennelli, rulli, ecc.) con countdown degli utilizzi rimanenti.
-- **Registro Asset:** Database elettrodomestici e arredi con numeri di serie, costi storici e tracciamento garanzie.
+## Moduli
 
-### 🗄️ 4. Vault Anagrafico & Sicurezza
-- Interfaccia UI "Neon Card" per la consultazione rapida di dati catastali, POD/PDR utenze, polizze assicurative (con riepilogo coperture) e scorporo spese condominiali.
-- Sezione dedicata alla conformità normativa e antincendio.
+Overview · Anagrafica · Asset · Prenotazioni · Manutenzione · Audit 3MATRIX · Finanze · Fatture e Ricevute · Sicurezza · Compliance Scan.
 
----
-
-## 🛠️ Architettura Tecnica
-
-Questo software è stato ingegnerizzato con un'architettura **Serverless / Client-Side**, progettata per essere ultra-veloce, sicura (i dati finanziari non lasciano mai il dispositivo) e a costo zero di hosting.
-
-* **Frontend:** HTML5, Tailwind CSS (via CDN) per un design moderno e responsive, [Lucide Icons](https://lucide.dev/) per l'iconografia.
-* **Grafici:** [Chart.js](https://www.chartjs.org/) per il rendering delle distribuzioni dei costi.
-* **Motore Stampa:** Algoritmo ibrido per la generazione di report e ricevute tramite finestra di stampa nativa del browser (per massima fedeltà e bypass dei blocchi CORS sui canvas).
-* **Database (JSON/JS Engine):** I dati risiedono nel file `masotto_db.js`. L'applicazione legge questo file, gestisce le operazioni CRUD (Create, Read, Update, Delete) in `localStorage` per una responsività immediata.
-* **Sincronizzazione (Universal Sidebar):** Una Super-Sidebar globale permette da qualsiasi pagina di esportare il `localStorage` aggiornato in un nuovo file `.js` o di ripristinare il database allo stato pulito originale.
-
----
-
-## 🚀 Installazione e Utilizzo
-
-Nessun server Node.js, nessun database SQL da configurare. L'app è pronta all'uso in ambiente locale:
-
-1. Clona la repository:
-   ```bash
-   git clone [https://github.com/TUO-USERNAME/2m-apartments-pms.git](https://github.com/TUO-USERNAME/2m-apartments-pms.git)
-
-## Aggiornamento database - versione invariata
-
-La piattaforma mantiene la stessa struttura multi-pagina originale. Sono stati aggiornati solo i database:
-
-- `masotto_db.js`: fonte JS principale caricata dalle pagine HTML;
-- `masotto_db2.js`: copia compatibile della fonte JS;
-- `masotto_complete_database.json`: copia JSON completa per fallback/fetch;
-- `masotto_database.json` e `masotto_database.js`: copie di servizio del database unico aggiornato;
-- `masotto_bookings_patch.json`: neutralizzato per evitare sovrascritture dei dati ufficiali.
-
-Il database unico aggiornato contiene: property_master, assets_mobile, structural_assets, finances, finance_adjustments, bookings, tickets, insurance, utilities, contacts, maintenance_presets, reusable_inventory, supply_presets.
-
-
-Aggiornamento pagamenti: inseriti Canone RAI speciale 2026 (€203,00, pagato a marzo) e TARI 2026 rata luglio (€74,00, da pagare fino a scadenza).
+Per il dettaglio architetturale vedi `README_MULTIPROPERTY.md`.
