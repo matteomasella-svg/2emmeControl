@@ -15,7 +15,7 @@ const TABLES = {
 };
 
 const F = {
-  properties: { name:'fldg40Lc7ZBCylxCR', regime:'fldu9gdftgQ8Kti2J', access:'fldwzOW9fZi5PqmEJ', capacity:'fldQENl4NArZhN6jF' },
+  properties: { name:'fldg40Lc7ZBCylxCR', code:'fldksgwBMb2Pc1Bmk', regime:'fldu9gdftgQ8Kti2J', access:'fldwzOW9fZi5PqmEJ', capacity:'fldQENl4NArZhN6jF' },
   auth: { property:'fldHMuDJrsjT58fNj', regime:'fldeJjagcOqkmK077', cin:'fldb7JpLy3n8lZwBT', cir:'fldH8u905xcBFjgSB', practice:'fldLu91GsOqpkZnG4', status:'fldIaFG16tJ40cU7P' },
   insurance: { property:'fldVREaQSvZJ0norq', expiry:'fldmO85fSR54VEKgU', status:'fldEjhr4KnvHRUiWj', product:'fldWzt3eTSxbClJqO' },
   catasto: { property:'fldAFPWsTJePaBXQe', status:'fldbdTItp1vHTRqSn', useful:'fld6NGILbCp7D8lLK', expiry:'fldCcZyw3cdLGDmzX' },
@@ -126,13 +126,32 @@ async function evaluateProperty(data:any){
 async function loadData(baseId:string, token:string, propertyKey:string){
   const airtable=async(path:string, init?:RequestInit)=>{ const res=await fetch(`https://api.airtable.com/v0/${baseId}/${path}`,{...init,headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json',...(init?.headers||{})}}); const text=await res.text(); let data:any={}; try{data=text?JSON.parse(text):{};}catch{data={raw:text};} if(!res.ok) throw new Error(data?.error?.message||data?.error?.type||`Airtable ${res.status}`); return data; };
   const listAll=async(tableId:string)=>{ const rows:any[]=[]; let offset=''; do{ const qs=new URLSearchParams({pageSize:'100',returnFieldsByFieldId:'true'}); if(offset)qs.set('offset',offset); const data=await airtable(`${tableId}?${qs}`); rows.push(...(data.records||[])); offset=data.offset||''; }while(offset); return rows; };
-  const all=await Promise.all([listAll(TABLES.properties),listAll(TABLES.authorizations),listAll(TABLES.insurance),listAll(TABLES.catasto),listAll(TABLES.deadlines),listAll(TABLES.rules),listAll(TABLES.bookings),listAll(TABLES.documents),listAll(TABLES.assets),listAll(TABLES.maintenance),listAll(TABLES.activity),listAll(TABLES.updates)]);
-  const [properties,authRows,insuranceRows,catastoRows,deadlineRows,ruleRows,bookingRows,documentRows,assetRows,maintenanceRows,activityRows,updateRows]=all;
-  const target=normalize(LEGACY_PROPERTY_NAMES[propertyKey]||propertyKey);
-  const propertyRecord=properties.find((r:any)=>{ const n=normalize(r.fields?.[F.properties.name]); return n===target||n.startsWith(target)||target.startsWith(n); });
+  const optional=async(tableId:string,label:string)=>{ try{return await listAll(tableId)}catch(e:any){console.warn('COMPLIANCE_OPTIONAL_TABLE_UNAVAILABLE',label,String(e?.message||e));return []} };
+  const [properties,authRows,insuranceRows,catastoRows,deadlineRows,bookingRows,assetRows,maintenanceRows,ruleRows,documentRows,activityRows,updateRows]=await Promise.all([
+    listAll(TABLES.properties),
+    listAll(TABLES.authorizations),
+    listAll(TABLES.insurance),
+    listAll(TABLES.catasto),
+    listAll(TABLES.deadlines),
+    listAll(TABLES.bookings),
+    listAll(TABLES.assets),
+    listAll(TABLES.maintenance),
+    optional(TABLES.rules,'rules'),
+    optional(TABLES.documents,'documents'),
+    optional(TABLES.activity,'activity'),
+    optional(TABLES.updates,'updates')
+  ]);
+  const rawTarget=normalize(propertyKey);
+  const legacyTarget=normalize(LEGACY_PROPERTY_NAMES[propertyKey]||'');
+  const propertyRecord=properties.find((r:any)=>{
+    const name=normalize(r.fields?.[F.properties.name]);
+    const code=normalize(r.fields?.[F.properties.code]);
+    return code===rawTarget || name===rawTarget || name.startsWith(rawTarget) || rawTarget.startsWith(name) ||
+      (legacyTarget && (name===legacyTarget || name.startsWith(legacyTarget) || legacyTarget.startsWith(name)));
+  });
   if(!propertyRecord) throw new Error(`PROPERTY_NOT_FOUND:${propertyKey}`);
   const pf=propertyRecord.fields||{};
-  const property={airtable_record_id:propertyRecord.id,property_key:propertyKey,name:pf[F.properties.name]||'',regime:value(pf[F.properties.regime])||'',access:pf[F.properties.access]||'',capacity:pf[F.properties.capacity]??null};
+  const property={airtable_record_id:propertyRecord.id,property_key:propertyKey,code:pf[F.properties.code]||'',name:pf[F.properties.name]||'',regime:value(pf[F.properties.regime])||'',access:pf[F.properties.access]||'',capacity:pf[F.properties.capacity]??null};
   const linked=(rows:any[],field:string)=>rows.filter(r=>linkedTo(r.fields,field,propertyRecord.id));
   const rules=ruleRows.map(ruleObject).filter((r:any)=>['ACTIVE','REVIEW_LEGAL'].includes(String(r.state).toUpperCase()));
   const pendingUpdates=updateRows.filter((r:any)=>['DA ANALIZZARE','REVIEW_LEGAL'].includes(String(value(r.fields?.[F.updates.status])||'').toUpperCase())).map((r:any)=>({id:r.id,title:r.fields?.[F.updates.title]||'',impact:value(r.fields?.[F.updates.impact])||'',detected:r.fields?.[F.updates.detected]||''}));
