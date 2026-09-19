@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const P={overview:['Overview','index.html','layout-dashboard'],anagrafica:['Anagrafica','anagrafica.html','building-2'],assets:['Asset','asset.html','boxes'],bookings:['Prenotazioni','prenotazioni.html','calendar-days'],maintenance:['Manutenzione','manutenzione.html','wrench'],audit:['Audit 3MATRIX','audit.html','scan-line'],finance:['Finanze','finanze.html','landmark'],documents:['Fatture & Ricevute','fatture.html','receipt-text'],security:['Sicurezza','sicurezza.html','shield-check'],compliance:['Compliance Scan','compliance.html','radar']};
+const P={overview:['Overview','index.html','layout-dashboard'],anagrafica:['Anagrafica','anagrafica.html','building-2'],assets:['Asset','asset.html','boxes'],bookings:['Prenotazioni','prenotazioni.html','calendar-days'],maintenance:['Manutenzione','manutenzione.html','wrench'],audit:['Audit 3MATRIX','audit.html','scan-line'],finance:['Finanze','finanze.html','landmark'],documents:['Fatture & Ricevute','fatture.html','receipt-text'],security:['Sicurezza','sicurezza.html','shield-check'],compliance:['Compliance Scan','compliance.html','radar'],pricing:['Pricing & Tax','calcolo-tasse.html','calculator']};
 const S={page:document.body.dataset.page||'overview',code:'',master:null,data:null,properties:[]};
 const $=q=>document.querySelector(q),$$=q=>[...document.querySelectorAll(q)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -35,7 +35,104 @@ function eventForm(){const a=S.data.assets||[];modal('Evento guasto / danno',`<d
 async function financePage(){const d=await ctrl('finance'),y=new Date().getFullYear(),b=d.bookings.filter(x=>String(x.check_in).startsWith(String(y))),g=b.reduce((s,x)=>s+x.gross,0),mv=d.movements.filter(x=>!x.year||x.year===y).reduce((s,x)=>s+x.amount,0);$('#content').innerHTML=hero(d.property)+`<div class="metrics">${metric('Lordo '+y,eur(g),b.length+' prenotazioni')}${metric('Saldo movimenti',eur(mv),'movimenti registrati')}${metric('Acquisti',eur(d.purchases.reduce((s,x)=>s+x.total,0)),'documenti fiscali')}${metric('Residuo condominio',eur(d.condo.reduce((s,x)=>s+x.residual,0)),'gestioni')}</div><div class="grid"><article class="panel full"><h3>Movimenti finanziari</h3><div class="table-wrap"><table class="table"><thead><tr><th>Data</th><th>Categoria</th><th>Descrizione</th><th>Stato</th><th>Importo</th></tr></thead><tbody>${d.movements.map(x=>`<tr><td>${date(x.date)}</td><td>${esc(x.category)}</td><td>${esc(x.description)}</td><td>${badge(x.status)}</td><td class="money">${eur(x.amount)}</td></tr>`).join('')}</tbody></table></div></article><article class="panel"><h3>Bollette</h3>${list(d.bills.map(x=>item(`${x.type} · ${x.provider}`,`${date(x.date)} · ${x.consumption} ${esc(x.unit)} · ${eur(x.total)}`,badge(x.status))))}</article><article class="panel"><h3>Rate condominiali</h3>${list(d.rates.map(x=>item(x.description,`${date(x.due_date)} · dovuto ${eur(x.due)} · saldo ${eur(x.balance)}`,badge(x.status))))}</article></div>`}
 async function documents(){const d=await finance(),p=norm(S.master.property.name),docs=d.documents.filter(x=>norm(x.property_name).includes(p)||p.includes(norm(x.property_name))),pay=d.payments.filter(x=>norm(x.property_name).includes(p)||p.includes(norm(x.property_name)));S.data={...d,documents:docs,payments:pay};$('#content').innerHTML=hero(S.master.property)+`<div class="metrics">${metric('Documenti',docs.length,'fatture/ricevute')}${metric('Pagamenti',pay.length,'registrati')}${metric('Incassato',eur(pay.reduce((s,x)=>s+x.amount_paid_eur,0)),'Airtable')}${metric('Residui',eur(pay.reduce((s,x)=>s+x.residual_eur,0)),'saldo')}</div><div class="grid"><article class="panel"><h3>Documenti emessi</h3>${list(docs.map(x=>item(`${x.number||x.id} · ${x.type}`,`${date(x.issued_at)} · ${esc(x.guest)} · ${eur(x.total_booking_eur)}`,badge(x.sdi_status||'Emesso'))))}</article><article class="panel"><h3>Pagamenti</h3>${list(pay.map(x=>item(`${x.guest} · ${x.payment_id}`,`${date(x.payment_date)} · ${eur(x.amount_paid_eur)} · residuo ${eur(x.residual_eur)}`,badge(x.status))))}</article></div>`}
 async function security(){const d=await ctrl('security'),over=d.compliance.filter(x=>x.due_date&&x.due_date<today()&&!closed(x.status)),ev=d.events.filter(x=>!closed(x.status));$('#content').innerHTML=hero(d.property)+`<div class="metrics">${metric('Polizze',d.insurance.length,'coperture')}${metric('Compliance scadute',over.length,'da gestire')}${metric('Eventi aperti',ev.length,'guasti/danni')}${metric('Asset non OK',d.assets.filter(x=>!/attiv|ok/i.test(norm(x.status))).length,'verifica')}</div><div class="grid"><article class="panel"><h3>Assicurazioni</h3>${list(d.insurance.map(x=>item(`${x.company} · ${x.product}`,`Scadenza ${date(x.expiry)} · ${eur(x.premium)}`,badge(x.status))))}</article><article class="panel"><h3>Compliance</h3>${list(d.compliance.map(x=>item(`${x.area} · ${x.description}`,`Scadenza ${date(x.due_date)} · ${esc(x.frequency)}`,badge(x.status||x.priority))))}</article><article class="panel full"><h3>Eventi aperti</h3>${list(ev.map(x=>item(x.asset_name||x.id,`${esc(x.description)} · assicurazione ${esc(x.insurance_status||'—')}`,badge(x.severity))))}</article></div>`}
-async function load(){status('','Sincronizzazione Airtable…');$('#alert').className='alert';try{if(S.page==='overview')await overview();else if(S.page==='anagrafica')await anagrafica();else if(S.page==='assets')await assets();else if(S.page==='bookings')await bookings();else if(S.page==='maintenance')await maintenance();else if(S.page==='audit')await audit();else if(S.page==='finance')await financePage();else if(S.page==='documents')await documents();else if(S.page==='security')await security();status('ok','Airtable live');window.lucide?.createIcons()}catch(e){fail(e)}}
+
+async function compliancePage(){
+  const fetchScan=async(save=false)=>{
+    const opt=save?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({property:S.code,origin:'MANUALE'})}:{};
+    return api('/api/compliance?property='+encodeURIComponent(S.code),opt);
+  };
+  const render=d=>{
+    const c=d.counts||{},pending=(d.outcomes||[]).filter(x=>x.result!=='COMPLIANT');
+    $('#content').innerHTML=hero(d.property||S.master.property)+
+    '<div class="metrics">'+
+      metric('Compliance score',(d.score??0)+'%',(d.rule_count||0)+' regole applicabili')+
+      metric('Block',c.block||0,'bloccanti')+
+      metric('Critiche',c.critical||0,'non conformità')+
+      metric('Review',c.review||0,'evidenze da verificare')+
+    '</div>'+
+    '<div class="toolbar"><button id="runCompliance" class="btn primary">Scansiona attività</button><button id="runWatch" class="btn">Aggiorna normativa</button><span class="status '+(String(d.overall_status||'').includes('COMPLIANT')?'ok':'')+'"><span class="dot"></span><span>'+esc(d.overall_status||'REVIEW')+'</span></span></div>'+
+    '<div class="grid"><article class="panel full"><div class="panel-head"><h3>Matrice controlli</h3><span class="muted small">Versione '+esc(d.normative_version||'—')+'</span></div><div class="compliance-grid">'+
+    (d.outcomes||[]).map(r=>'<div class="compliance-card"><div class="panel-head"><div><strong>'+esc(r.id)+' · '+esc(r.title)+'</strong><div class="muted small">'+esc(r.area||'Altro')+' · '+esc(r.jurisdiction||'')+'</div></div>'+badge(r.result)+'</div><div class="kv"><div><span>Evidenza</span><span>'+esc(r.observed||'—')+'</span></div><div><span>Valutazione</span><span>'+esc(r.rationale||'—')+'</span></div></div></div>').join('')+
+    '</div></article><article class="panel full"><h3>Azioni correttive</h3>'+
+    list(pending.map(r=>item((r.id||'')+' · '+(r.area||''),esc(r.corrective_action||r.rationale||'Verificare la regola.'),badge(r.result))),'Nessuna azione correttiva aperta')+
+    '</article></div>';
+    $('#runCompliance').onclick=async()=>{status('','Scansione compliance…');try{render(await fetchScan(true));status('ok','Compliance aggiornata')}catch(e){fail(e)}};
+    $('#runWatch').onclick=async()=>{status('','Aggiornamento normativo…');try{await api('/api/compliance-watch',{method:'POST'});render(await fetchScan(false));status('ok','Normativa verificata')}catch(e){fail(e)}};
+    window.lucide?.createIcons();
+  };
+  render(await fetchScan(false));
+}
+function pricingDefaults(name){
+  const n=norm(name);
+  if(n.includes('heritage'))return 80;
+  if(n.includes('nolo suite'))return 95;
+  if(n.includes('nolo nest'))return 85;
+  if(n.includes('nolo studio'))return 75;
+  return 0;
+}
+async function pricing(){
+  const p=S.master.property||{},baseAdr=pricingDefaults(p.name);
+  const currentYear=new Date().getFullYear();
+  $('#content').innerHTML=hero(p)+
+  '<div class="pricing-shell"><section class="panel pricing-form"><div class="panel-head"><div><h3>Simulatore soggiorno</h3><div class="muted small">Regole operative 2EMME · calcolo non salvato finché non viene associato a una prenotazione</div></div></div>'+
+  '<div class="form-grid">'+
+    field('Check-in','pt_in',today(),'date')+
+    field('Notti','pt_nights','7','number')+
+    field('Ospiti','pt_pax','1','number')+
+    field('ADR','pt_adr',baseAdr||'','number')+
+    '<div class="field"><label>Canale</label><select id="pt_channel" name="pt_channel"><option>Diretta</option><option>Airbnb</option><option>Booking</option><option>Altro</option></select></div>'+
+    field('Sconto %','pt_discount','0','number')+
+  '</div>'+
+  '<div class="pricing-note">Fasce durata riconosciute: 1–13 / 14–29 / 30–60 / 61–90 notti. Le percentuali di sconto restano modificabili finché non vengono parametrizzate nel master.</div>'+
+  '<div id="pricingWarnings"></div></section>'+
+  '<section class="panel pricing-result"><h3>Risultato</h3><div id="pricingMetrics" class="metrics"></div><div id="pricingBreakdown" class="pricing-breakdown"></div><div class="pricing-note">City tax Milano: 2025 €6,50; 2026 €9,50 per persona/notte, massimo 14 notti. Airbnb viene indicata come versata dalla piattaforma. Per prenotazioni dirette: costi di servizio €15; surcharge 4% sotto 28 notti oppure €80 da 28 notti in su. Pulizia finale: €45 sotto 14 notti, €80 da 14 notti; pulizia intermedia €40 ogni 14 giorni.</div></section></div>';
+  const calc=()=>{
+    const checkin=$('[name="pt_in"]').value;
+    const nights=Math.max(1,Number($('[name="pt_nights"]').value||0));
+    const pax=Math.max(1,Number($('[name="pt_pax"]').value||0));
+    const adr=Math.max(0,Number($('[name="pt_adr"]').value||0));
+    const discount=Math.max(0,Math.min(100,Number($('[name="pt_discount"]').value||0)));
+    const channel=$('#pt_channel').value;
+    const year=Number(String(checkin||currentYear).slice(0,4))||currentYear;
+    const band=nights<=13?'1–13':nights<=29?'14–29':nights<=60?'30–60':'61–90';
+    const grossStay=adr*nights;
+    const stayAfterDiscount=grossStay*(1-discount/100);
+    const finalCleaning=nights<14?45:80;
+    const intermediate=nights>=14?Math.floor(nights/14)*40:0;
+    const service=/diretta/i.test(channel)?15:0;
+    const surcharge=/diretta/i.test(channel)?(nights<28?stayAfterDiscount*.04:80):0;
+    const cityRate=year===2025?6.5:9.5;
+    const cityGross=cityRate*Math.min(nights,14)*pax;
+    const cityCollected=/airbnb/i.test(channel)?0:cityGross;
+    const taxable=stayAfterDiscount+finalCleaning+intermediate+service+surcharge;
+    const payable=taxable+cityCollected;
+    $('#pricingMetrics').innerHTML=
+      metric('Fascia',band,nights+' notti')+
+      metric('Soggiorno',eur(stayAfterDiscount),'dopo sconto')+
+      metric('City tax',eur(cityCollected),/airbnb/i.test(channel)?'versata dalla piattaforma':pax+' ospite/i')+
+      metric('Totale',eur(payable),'preventivo');
+    $('#pricingBreakdown').innerHTML=
+      '<div><span>ADR × notti</span><b>'+eur(grossStay)+'</b></div>'+
+      '<div><span>Sconto '+discount.toFixed(1)+'%</span><b>- '+eur(grossStay-stayAfterDiscount)+'</b></div>'+
+      '<div><span>Pulizia finale</span><b>'+eur(finalCleaning)+'</b></div>'+
+      '<div><span>Pulizie intermedie</span><b>'+eur(intermediate)+'</b></div>'+
+      '<div><span>Costi di servizio</span><b>'+eur(service)+'</b></div>'+
+      '<div><span>Surcharge</span><b>'+eur(surcharge)+'</b></div>'+
+      '<div class="pricing-total"><span>Totale imponibile operativo</span><b>'+eur(taxable)+'</b></div>'+
+      '<div><span>City tax calcolata</span><b>'+eur(cityGross)+'</b></div>'+
+      '<div class="pricing-total"><span>Totale da incassare</span><b>'+eur(payable)+'</b></div>';
+    const warnings=[];
+    if(nights>30) warnings.push('Regola prenotazioni: un singolo record non deve superare 30 giorni; il soggiorno va spezzato in blocchi massimo 30 notti.');
+    if(!adr) warnings.push('ADR non parametrizzato per questo immobile: inseriscilo manualmente.');
+    if(year!==2025&&year!==2026) warnings.push('Aliquota city tax disponibile nel motore solo per 2025 e 2026: verificare il valore per l’anno selezionato.');
+    $('#pricingWarnings').innerHTML=warnings.map(x=>'<div class="alert show">'+esc(x)+'</div>').join('');
+  };
+  ['pt_in','pt_nights','pt_pax','pt_adr','pt_discount'].forEach(n=>$('[name="'+n+'"]').addEventListener('input',calc));
+  $('#pt_channel').addEventListener('change',calc);
+  calc();
+}
+
+async function load(){status('','Sincronizzazione Airtable…');$('#alert').className='alert';try{if(S.page==='overview')await overview();else if(S.page==='anagrafica')await anagrafica();else if(S.page==='assets')await assets();else if(S.page==='bookings')await bookings();else if(S.page==='maintenance')await maintenance();else if(S.page==='audit')await audit();else if(S.page==='finance')await financePage();else if(S.page==='documents')await documents();else if(S.page==='security')await security();else if(S.page==='compliance')await compliancePage();else if(S.page==='pricing')await pricing();status('ok','Airtable live');window.lucide?.createIcons()}catch(e){fail(e)}}
 async function boot(){shell();try{await master('action=health');const l=await master('action=properties');S.properties=l.properties||[];const q=new URLSearchParams(location.search).get('property'),saved=localStorage.getItem('2m_active_property_code'),codes=S.properties.map(x=>x.code);S.code=codes.includes(q)?q:(codes.includes(saved)?saved:codes[0]);if(!S.code)throw new Error('Nessun immobile disponibile');localStorage.setItem('2m_active_property_code',S.code);selectors();S.master=await master('property='+encodeURIComponent(S.code));$('#subtitle').textContent=`${S.master.property?.name||S.code} · Fonte live Airtable`;await load()}catch(e){fail(e)}}
 document.addEventListener('DOMContentLoaded',boot);
 })();
